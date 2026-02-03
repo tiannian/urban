@@ -1,0 +1,14 @@
+[package]
+name = "funding-rate-calculator"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "funding-rate-calculator"
+path = "src/main.rs"
+
+[dependencies]
+reqwest.workspace = true
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
