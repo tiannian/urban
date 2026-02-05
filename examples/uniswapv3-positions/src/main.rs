@@ -7,17 +7,9 @@ use alloy::providers::{Provider, RootProvider};
 use std::str::FromStr;
 use uniswapv3::UniswapV3PositionManager;
 
-const TEN_18: u128 = 1_000_000_000_000_000_000;
-
 fn format_amount_18(value: U256) -> String {
     let divisor = U256::from(10u64).pow(U256::from(18u64));
     let (integer, frac) = value.div_rem(divisor);
-    format!("{}.{:0>18}", integer, frac)
-}
-
-fn format_liquidity_18(liquidity: u128) -> String {
-    let integer = liquidity / TEN_18;
-    let frac = liquidity % TEN_18;
     format!("{}.{:0>18}", integer, frac)
 }
 
@@ -50,10 +42,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("  token_id: {}", token_id);
         println!("  token0:  {}", pos.token0);
         println!("  token1:  {}", pos.token1);
-        println!(
-            "  liquidity (18 decimals): {}",
-            format_liquidity_18(pos.liquidity)
-        );
+        println!("  liquidity: {}", pos.liquidity);
         println!(
             "  withdrawable_amount0 (18 decimals): {}",
             format_amount_18(pos.withdrawable_amount0)
