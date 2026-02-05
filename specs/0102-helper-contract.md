@@ -225,6 +225,102 @@ After this normalization:
 
 Implementations MAY include additional informational fields (e.g., pool address, fee tier, observation data) as long as the core semantics above remain unchanged.
 
+## Implementation: PancakeSwapPositionHelper Contract
+
+This section describes the on-chain helper contract implementation that provides the core calculation logic for Steps 3 and 4 of the `readPositionInfo` operation.
+
+### Contract Overview
+
+The `PancakeSwapPositionHelper` contract provides a pure function `getAmounts` that computes the raw token amounts (`amount0_raw`, `amount1_raw`) from liquidity and price parameters. This function implements the logic specified in **Step 3: Compute Boundary Prices** and **Step 4: Compute Raw Token Amounts from Liquidity**.
+
+### Contract Interface
+
+```solidity
+// SPDX-License-Identifier: GPL-2.0-or-later
+pragma solidity >=0.7.5;
+pragma abicoder v2;
+
+import "@pancakeswap/v3-core/contracts/libraries/TickMath.sol";
+import "@pancakeswap/v3-periphery/contracts/libraries/LiquidityAmounts.sol";
+
+/// @title PancakeSwap Position Helper
+/// @notice Reads and normalizes LP position information from PancakeSwap V3 positions
+/// @dev Implements the readPositionInfo logic as specified in 0102-helper-contract.md
+contract PancakeSwapPositionHelper {
+    function getAmounts(
+        uint160 sqrtRatioX96,
+        int24 tickLower,
+        int24 tickUpper,
+        uint128 liquidity
+    ) external pure returns (uint256 amount0, uint256 amount1) {
+        uint160 sqrtRatioAX96 = TickMath.getSqrtRatioAtTick(tickLower);
+        uint160 sqrtRatioBX96 = TickMath.getSqrtRatioAtTick(tickUpper);
+
+        return
+            LiquidityAmounts.getAmountsForLiquidity(
+                sqrtRatioX96,
+                sqrtRatioAX96,
+                sqrtRatioBX96,
+                liquidity
+            );
+    }
+}
+```
+
+### Function Specification: `getAmounts`
+
+#### Inputs
+
+- `sqrtRatioX96` (uint160):
+  - The current square-root price of the pool in Q96 format.
+  - This value MUST be obtained from `pool.slot0().sqrtPriceX96` (see Step 2).
+- `tickLower` (int24):
+  - The lower tick bound of the position.
+  - This value MUST be obtained from `positions(tokenId).tickLower` (see Step 1).
+- `tickUpper` (int24):
+  - The upper tick bound of the position.
+  - This value MUST be obtained from `positions(tokenId).tickUpper` (see Step 1).
+- `liquidity` (uint128):
+  - The liquidity amount of the position.
+  - This value MUST be obtained from `positions(tokenId).liquidity` (see Step 1).
+
+#### Outputs
+
+- `amount0` (uint256):
+  - The raw amount of `token0` in the position at the current price.
+  - This corresponds to `amount0_raw` in Step 4.
+- `amount1` (uint256):
+  - The raw amount of `token1` in the position at the current price.
+  - This corresponds to `amount1_raw` in Step 4.
+
+#### Implementation Details
+
+The function performs the following operations:
+
+1. **Compute boundary prices** (Step 3):
+   - `sqrtRatioAX96 = TickMath.getSqrtRatioAtTick(tickLower)`
+   - `sqrtRatioBX96 = TickMath.getSqrtRatioAtTick(tickUpper)`
+
+2. **Compute raw token amounts** (Step 4):
+   - Calls `LiquidityAmounts.getAmountsForLiquidity(sqrtRatioX96, sqrtRatioAX96, sqrtRatioBX96, liquidity)`
+   - Returns the computed `(amount0, amount1)` tuple
+
+#### Usage in `readPositionInfo` Flow
+
+When implementing `readPositionInfo`, callers SHOULD:
+
+1. Read position data via `positions(tokenId)` (Step 1).
+2. Read pool state via `pool.slot0()` (Step 2).
+3. Call `helper.getAmounts(sqrtPriceX96, tickLower, tickUpper, liquidity)` to obtain `amount0_raw` and `amount1_raw`.
+4. Normalize the results according to Step 5 (determining whether `token0`/`token1` matches `base_token`/`usdt_token`).
+
+#### Notes
+
+- The function is marked as `pure` because it performs no state reads or writes; all inputs are provided as parameters.
+- The function uses the official PancakeSwap V3 math libraries (`TickMath` and `LiquidityAmounts`), ensuring consistency with the protocol's calculations.
+- The returned amounts are in the AMM's `token0`/`token1` ordering and MUST be normalized according to Step 5 before use in downstream systems.
+- Other position data (e.g., `tokensOwed0`, `tokensOwed1`, `token0`, `token1` addresses) can be read directly from the position manager contract and do not require helper contract calls.
+
 ## Error Handling and Edge Cases
 
 Implementations of `readPositionInfo` MUST handle the following cases:
@@ -246,4 +342,3 @@ Implementations of `readPositionInfo` MUST handle the following cases:
 - Uniswap V3 Core and Periphery documentation (positions, `slot0`, `TickMath`, `LiquidityAmounts`).
 - PancakeSwap V3 (or equivalent) documentation for position NFTs and read-only pool functions.
 - Internal LP hedging specification (`0100-lp-hedging.md`) for downstream usage of `amount0` (BASE) and `amount1` (USDT).
-

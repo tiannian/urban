@@ -4,3 +4,6 @@
 [submodule "contracts/lib/pancake-v3-contracts"]
 	path = contracts/lib/pancake-v3-contracts
 	url = https://github.com/pancakeswap/pancake-v3-contracts
+[submodule "contracts/lib/openzeppelin-contracts"]
+	path = contracts/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts
