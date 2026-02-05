@@ -3931,8 +3931,6 @@ name = "uniswapv3"
 version = "0.1.0"
 dependencies = [
  "alloy",
- "alloy-eips",
- "alloy-provider",
  "anyhow",
  "tokio",
 ]

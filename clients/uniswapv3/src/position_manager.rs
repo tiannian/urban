@@ -1,8 +1,8 @@
 //! Uniswap V3 PositionManager client and position data types.
 
+use alloy::eips::BlockId;
 use alloy::primitives::{Address, U256};
 use alloy::providers::{DynProvider, Provider};
-use alloy_eips::BlockId;
 use anyhow::Result;
 use std::collections::BTreeMap;
 
