@@ -8,6 +8,6 @@ name = "uniswapv3"
 path = "src/lib.rs"
 
 [dependencies]
-alloy = { version = "1.6", features = ["contract", "eips", "provider-http", "provider-ws"] }
+alloy = { version = "1.6", features = ["contract", "eips"] }
 anyhow = "1.0"
 tokio.workspace = true
