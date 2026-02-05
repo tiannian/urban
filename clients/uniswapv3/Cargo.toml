@@ -1,0 +1,14 @@
+[package]
+name = "uniswapv3"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+name = "uniswapv3"
+path = "src/lib.rs"
+
+[dependencies]
+alloy = { version = "1.6", features = ["provider-http", "provider-ws", "rpc-types-eth", "sol-types"] }
+alloy-provider = "1.6"
+anyhow = "1.0"
+tokio.workspace = true
