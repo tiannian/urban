@@ -6,9 +6,9 @@ This specification describes a client for interacting with Uniswap V3 PositionMa
 
 ## Scope and Assumptions
 
-- **Contract Interface**: The client uses the contract interface functions defined in `0102-contract-interface.md`, including `balanceOf`, `tokenOfOwnerByIndex`, `positions`, `decreaseLiquidity`, and `collect`.
+- **Contract Interface**: The client uses the `PositionManagerInstance<Arc<DynProvider>>` generated from the `sol!` macro defined in `0102-contract-interface.md`. This instance provides direct access to PositionManager contract functions including `balanceOf`, `tokenOfOwnerByIndex`, `positions`, `decreaseLiquidity`, and `collect`.
 - **Position Ownership**: The client operates on positions owned by a single address (the owner address).
-- **Simulation Mode**: The client uses `eth_call` (simulation mode) to read position data without executing transactions on-chain.
+- **Simulation Mode**: The client uses `eth_call` (simulation mode) via the provider to read position data without executing transactions on-chain.
 - **Data Storage**: Position data is stored in a `BTreeMap` keyed by position token ID within the `UniswapV3PositionManager` structure.
 
 ## Terminology and Variables
@@ -26,7 +26,21 @@ This specification describes a client for interacting with Uniswap V3 PositionMa
 
 ### UniswapV3PositionManager Structure
 
-The `UniswapV3PositionManager` type maintains a `BTreeMap<u256, PositionData>` that maps position token IDs to their associated data.
+The `UniswapV3PositionManager` type contains:
+- `position_manager`: A `PositionManagerInstance<Arc<DynProvider>>` instance that provides direct access to PositionManager contract functions. This instance is generated from the `sol!` macro defined in `0102-contract-interface.md`.
+- `positions`: A `BTreeMap<u256, PositionData>` that maps position token IDs to their associated data.
+
+**Constructor**
+
+```rust
+fn new(address: Address, provider: Arc<DynProvider>) -> Self
+```
+
+- Creates a new `UniswapV3PositionManager` instance.
+- **Parameters:**
+  - `address`: The contract address of the Uniswap V3 PositionManager contract.
+  - `provider`: An `Arc<DynProvider>` instance for making RPC calls to the blockchain.
+- **Returns:** A new `UniswapV3PositionManager` instance with the `PositionManagerInstance` initialized at the given address.
 
 **PositionData Structure**
 
@@ -51,16 +65,16 @@ async fn sync_lp(&mut self, owner: Address) -> Result<()>
 
 **Function Behavior**
 
-The `sync_lp` function synchronizes the internal `BTreeMap` with the current on-chain state of all positions owned by the specified address. The function performs the following steps:
+The `sync_lp` function synchronizes the internal `BTreeMap` with the current on-chain state of all positions owned by the specified address. All contract function calls are made through the `position_manager` instance. The function performs the following steps:
 
 1. **Enumerate Positions**
-   - Call `balanceOf(owner)` to get the total number of positions owned by the address.
+   - Call `self.position_manager.balanceOf(owner).call().await?` to get the total number of positions owned by the address.
    - For each index from `0` to `balanceOf(owner) - 1`:
-     - Call `tokenOfOwnerByIndex(owner, index)` to retrieve the position token ID.
+     - Call `self.position_manager.tokenOfOwnerByIndex(owner, index).call().await?` to retrieve the position token ID.
 
 2. **Read Position Basic Information**
    - For each token ID obtained in step 1:
-     - Call `positions(token_id)` to retrieve position details.
+     - Call `self.position_manager.positions(token_id).call().await?` to retrieve position details.
      - Extract `token0`, `token1`, and `liquidity` from the returned data.
 
 3. **Simulate Liquidity Withdrawal**
@@ -71,7 +85,7 @@ The `sync_lp` function synchronizes the internal `BTreeMap` with the current on-
        - `amount0Min`: 0 (minimum constraints not needed for simulation).
        - `amount1Min`: 0.
        - `deadline`: A future timestamp (not critical for simulation).
-     - Call `decreaseLiquidity(params)` via `eth_call` (simulation mode).
+     - Call `self.position_manager.decreaseLiquidity(params).call().await?` via `eth_call` (simulation mode).
      - Extract `amount0` and `amount1` from the return values as `withdrawable_amount0` and `withdrawable_amount1`.
 
 4. **Simulate Fee Collection**
@@ -81,7 +95,7 @@ The `sync_lp` function synchronizes the internal `BTreeMap` with the current on-
        - `recipient`: The owner address (or any address, not critical for simulation).
        - `amount0Max`: Maximum value (e.g., `u128::MAX`) to collect all available fees.
        - `amount1Max`: Maximum value (e.g., `u128::MAX`) to collect all available fees.
-     - Call `collect(params)` via `eth_call` (simulation mode).
+     - Call `self.position_manager.collect(params).call().await?` via `eth_call` (simulation mode).
      - Extract `amount0` and `amount1` from the return values as `collectable_amount0` and `collectable_amount1`.
 
 5. **Update BTreeMap**
@@ -110,7 +124,9 @@ The `sync_lp` function synchronizes the internal `BTreeMap` with the current on-
 To populate the position cache for the first time:
 
 ```rust
-let mut manager = UniswapV3PositionManager::new(...);
+let provider: Arc<DynProvider> = ...; // Initialize provider
+let position_manager_address = Address::from_str("...")?;
+let mut manager = UniswapV3PositionManager::new(position_manager_address, provider);
 manager.sync_lp(owner_address).await?;
 ```
 
@@ -135,12 +151,11 @@ for (token_id, position_data) in manager.positions.iter() {
 
 ## Configuration Parameters
 
-- **RPC Configuration**
-  - `rpc_url`: Ethereum RPC endpoint URL for making contract calls.
-  - `position_manager_address`: Address of the Uniswap V3 PositionManager contract.
+- **Provider Configuration**
+  - The `Arc<DynProvider>` passed to `new()` should be configured with the appropriate RPC endpoint URL and other connection parameters.
+  - `position_manager_address`: Address of the Uniswap V3 PositionManager contract (passed to `new()`).
 - **Simulation Parameters**
-  - `simulation_block`: Optional block number for simulation calls (defaults to latest if not specified).
-  - `simulation_timeout`: Timeout for RPC calls.
+  - Simulation calls are made via `eth_call` through the provider. The provider configuration determines the block number (defaults to latest if not specified) and timeout settings.
 
 ## References
 
