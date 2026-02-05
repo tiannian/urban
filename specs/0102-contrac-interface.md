@@ -4,6 +4,23 @@
 
 This specification defines the contract interfaces used for interacting with Uniswap V3 Position NFTs and the PositionManager contract. These interfaces enable querying position information, managing liquidity, and collecting fees.
 
+**Implementation Note**: The contract interface can be generated as Rust code using the alloy `sol!` macro. The generated code should include the `#[sol(rpc)]` attribute to enable RPC functionality. All functions defined in this specification are functions from the PositionManager contract.
+
+### Implementation
+
+The PositionManager contract interface should be generated using the alloy `sol!` macro with the `#[sol(rpc)]` attribute:
+
+```rust
+#[sol(rpc)]
+sol! {
+    // PositionManager contract interface
+    // All functions listed below are from the PositionManager contract
+    ...
+}
+```
+
+This generates Rust bindings that enable RPC calls to the PositionManager contract functions.
+
 ## Detailed Specifications
 
 ### Position NFT Interface
@@ -25,7 +42,7 @@ The Position NFT contract implements the ERC-721 standard with additional method
 
 ### PositionManager Interface
 
-The PositionManager contract provides functions for managing liquidity positions and collecting fees.
+The PositionManager contract provides functions for managing liquidity positions and collecting fees. All functions listed in this section are functions from the PositionManager contract.
 
 #### Functions
 
