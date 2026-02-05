@@ -23,9 +23,9 @@ This generates Rust bindings that enable RPC calls to the PositionManager contra
 
 ## Detailed Specifications
 
-### Position NFT Interface
+### PositionManager Interface
 
-The Position NFT contract implements the ERC-721 standard with additional methods for enumerating positions owned by an address.
+The PositionManager contract provides functions for managing liquidity positions and collecting fees. All functions listed in this section are functions from the PositionManager contract.
 
 #### Functions
 
@@ -39,12 +39,6 @@ The Position NFT contract implements the ERC-721 standard with additional method
 - Returns the token ID of the Position NFT at the given index of the owner's token list.
 - Used together with `balanceOf` to list all Position NFT IDs owned by a specific address.
 - Index must be less than `balanceOf(owner)`.
-
-### PositionManager Interface
-
-The PositionManager contract provides functions for managing liquidity positions and collecting fees. All functions listed in this section are functions from the PositionManager contract.
-
-#### Functions
 
 **`positions(uint256 tokenId) returns (uint96 nonce, address operator, address token0, address token1, uint24 fee, int24 tickLower, int24 tickUpper, uint128 liquidity, uint256 feeGrowthInside0LastX128, uint256 feeGrowthInside1LastX128, uint128 tokensOwed0, uint128 tokensOwed1)`**
 

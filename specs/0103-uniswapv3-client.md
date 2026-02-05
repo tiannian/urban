@@ -6,7 +6,7 @@ This specification describes a client for interacting with Uniswap V3 PositionMa
 
 ## Scope and Assumptions
 
-- **Contract Interface**: The client uses the contract interface functions defined in `0102-contrac-interface.md`, including `balanceOf`, `tokenOfOwnerByIndex`, `positions`, `decreaseLiquidity`, and `collect`.
+- **Contract Interface**: The client uses the contract interface functions defined in `0102-contract-interface.md`, including `balanceOf`, `tokenOfOwnerByIndex`, `positions`, `decreaseLiquidity`, and `collect`.
 - **Position Ownership**: The client operates on positions owned by a single address (the owner address).
 - **Simulation Mode**: The client uses `eth_call` (simulation mode) to read position data without executing transactions on-chain.
 - **Data Storage**: Position data is stored in a `BTreeMap` keyed by position token ID within the `UniswapV3PositionManager` structure.
@@ -144,5 +144,5 @@ for (token_id, position_data) in manager.positions.iter() {
 
 ## References
 
-- `0102-contrac-interface.md` for contract interface function definitions and usage patterns.
+- `0102-contract-interface.md` for contract interface function definitions and usage patterns.
 - Uniswap V3 PositionManager contract documentation for detailed behavior of `positions`, `decreaseLiquidity`, and `collect` functions.
