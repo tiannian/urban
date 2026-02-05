@@ -73,21 +73,15 @@ impl UniswapV3PositionManager {
     /// # Returns
     /// `Result<()>` - Returns an error if any critical operation fails
     pub async fn sync_lp(&mut self, owner: Address) -> Result<()> {
-        // Step 1: Enumerate positions
         let balance = self.position_manager.balanceOf(owner).call().await?;
 
-        let mut token_ids = Vec::new();
         for index in 0..balance.to::<u64>() {
             let token_id = self
                 .position_manager
                 .tokenOfOwnerByIndex(owner, U256::from(index))
                 .call()
                 .await?;
-            token_ids.push(token_id);
-        }
 
-        // Step 2: Read position basic information and simulate operations
-        for token_id in token_ids {
             // Read position details
             let position_info = self.position_manager.positions(token_id).call().await?;
 
