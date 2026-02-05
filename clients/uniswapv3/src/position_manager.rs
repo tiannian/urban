@@ -4,7 +4,6 @@ use alloy::primitives::{Address, U256};
 use alloy::providers::DynProvider;
 use anyhow::Result;
 use std::collections::BTreeMap;
-use std::sync::Arc;
 
 use crate::contracts::{CollectParams, DecreaseLiquidityParams, IPositionManager};
 
@@ -32,7 +31,7 @@ pub struct PositionData {
 /// UniswapV3PositionManager provides functionality to interact with Uniswap V3 PositionManager contracts
 pub struct UniswapV3PositionManager {
     /// PositionManager contract instance for making RPC calls
-    position_manager: IPositionManager::IPositionManagerInstance<Arc<DynProvider>>,
+    position_manager: IPositionManager::IPositionManagerInstance<DynProvider>,
     /// Internal cache of position data keyed by token ID
     pub positions: BTreeMap<U256, PositionData>,
 }
@@ -42,11 +41,11 @@ impl UniswapV3PositionManager {
     ///
     /// # Arguments
     /// * `address` - The contract address of the Uniswap V3 PositionManager contract
-    /// * `provider` - An `Arc<DynProvider>` instance for making RPC calls to the blockchain
+    /// * `provider` - A `DynProvider` instance for making RPC calls to the blockchain
     ///
     /// # Returns
     /// A new `UniswapV3PositionManager` instance with the `PositionManagerInstance` initialized at the given address
-    pub fn new(address: Address, provider: Arc<DynProvider>) -> Self {
+    pub fn new(address: Address, provider: DynProvider) -> Self {
         let position_manager = IPositionManager::new(address, provider);
         Self {
             position_manager,
