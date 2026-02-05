@@ -1,0 +1,1 @@
+@pancakeswap/v3-periphery/=lib/pancake-v3-contracts/projects/v3-periphery/
