@@ -33,7 +33,7 @@ pub struct UniswapV3PositionManager {
     /// PositionManager contract instance for making RPC calls
     position_manager: IPositionManager::IPositionManagerInstance<DynProvider>,
     /// Internal cache of position data keyed by token ID
-    pub positions: BTreeMap<U256, PositionData>,
+    positions: BTreeMap<U256, PositionData>,
 }
 
 impl UniswapV3PositionManager {
@@ -51,6 +51,11 @@ impl UniswapV3PositionManager {
             position_manager,
             positions: BTreeMap::new(),
         }
+    }
+
+    /// Returns a reference to the cached position data keyed by token ID.
+    pub fn positions(&self) -> &BTreeMap<U256, PositionData> {
+        &self.positions
     }
 
     /// Synchronizes the internal `BTreeMap` with the current on-chain state of all positions owned by the specified address
