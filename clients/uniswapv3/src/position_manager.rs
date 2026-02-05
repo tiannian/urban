@@ -1,7 +1,8 @@
 //! Uniswap V3 PositionManager client and position data types.
 
 use alloy::primitives::{Address, U256};
-use alloy::providers::DynProvider;
+use alloy::providers::{DynProvider, Provider};
+use alloy_eips::BlockId;
 use anyhow::Result;
 use std::collections::BTreeMap;
 
@@ -73,17 +74,37 @@ impl UniswapV3PositionManager {
     /// # Returns
     /// `Result<()>` - Returns an error if any critical operation fails
     pub async fn sync_lp(&mut self, owner: Address) -> Result<()> {
-        let balance = self.position_manager.balanceOf(owner).call().await?;
+        let block_number = self
+            .position_manager
+            .provider()
+            .get_block(BlockId::latest())
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("failed to get latest block"))?
+            .number();
+        let block_id = BlockId::number(block_number);
+
+        let balance = self
+            .position_manager
+            .balanceOf(owner)
+            .block(block_id)
+            .call()
+            .await?;
 
         for index in 0..balance.to::<u64>() {
             let token_id = self
                 .position_manager
                 .tokenOfOwnerByIndex(owner, U256::from(index))
+                .block(block_id)
                 .call()
                 .await?;
 
             // Read position details
-            let position_info = self.position_manager.positions(token_id).call().await?;
+            let position_info = self
+                .position_manager
+                .positions(token_id)
+                .block(block_id)
+                .call()
+                .await?;
 
             let token0 = position_info.token0;
             let token1 = position_info.token1;
@@ -105,6 +126,7 @@ impl UniswapV3PositionManager {
                 match self
                     .position_manager
                     .decreaseLiquidity(decrease_params)
+                    .block(block_id)
                     .call()
                     .await
                 {
@@ -129,7 +151,13 @@ impl UniswapV3PositionManager {
                 amount1Max: u128::MAX,
             };
 
-            match self.position_manager.collect(collect_params).call().await {
+            match self
+                .position_manager
+                .collect(collect_params)
+                .block(block_id)
+                .call()
+                .await
+            {
                 Ok(result) => {
                     collectable_amount0 = result.amount0;
                     collectable_amount1 = result.amount1;
