@@ -1,5 +1,5 @@
 [package]
-name = "uniswapv3"
+name = "clients-uniswapv3"
 version.workspace = true
 edition.workspace = true
 
@@ -8,6 +8,6 @@ name = "uniswapv3"
 path = "src/lib.rs"
 
 [dependencies]
-alloy = { version = "1.6", features = ["contract", "eips"] }
-anyhow = "1.0"
+alloy.workspace = true
+anyhow.workspace = true
 tokio.workspace = true
