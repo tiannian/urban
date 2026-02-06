@@ -1,0 +1,10 @@
+[package]
+name = "clients-binance"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+name = "binance"
+path = "src/lib.rs"
+
+[dependencies]

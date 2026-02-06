@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "clients/binance",
     "clients/uniswapv3",
     "examples/funding-rate-calculator",
     "examples/uniswapv3-positions",
