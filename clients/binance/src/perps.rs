@@ -16,13 +16,14 @@ impl BinancePerpsClient {
     /// Creates a new `BinancePerpsClient` instance
     ///
     /// # Arguments
+    /// * `client` - HTTP client instance for making requests
     /// * `config` - A `BinancePerpsClientConfig` instance containing all configuration parameters
     ///
     /// # Returns
     /// A new `BinancePerpsClient` instance with the provided configuration
-    pub fn new(config: BinancePerpsClientConfig) -> Self {
+    pub fn new(client: Arc<reqwest::Client>, config: BinancePerpsClientConfig) -> Self {
         Self {
-            client: Arc::new(reqwest::Client::new()),
+            client,
             api_key: config.api_key,
             api_secret: config.api_secret,
             base_url: config.base_url,
