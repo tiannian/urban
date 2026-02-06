@@ -8,8 +8,10 @@ use alloy::network::Ethereum;
 use alloy::primitives::U256;
 use alloy::providers::{Provider, RootProvider};
 use binance::BinancePerpsClient;
+use reqwest::Client;
 use serde::Deserialize;
 use std::str::FromStr;
+use std::sync::Arc;
 use uniswapv3::UniswapV3PositionManager;
 
 const BINANCE_PREMIUM_INDEX_URL: &str =
@@ -35,8 +37,10 @@ fn u256_to_f64_18(value: U256) -> f64 {
     combined.parse().unwrap_or(0.0)
 }
 
-async fn fetch_bnb_mark_price() -> Result<f64, Box<dyn std::error::Error>> {
-    let resp = reqwest::get(BINANCE_PREMIUM_INDEX_URL)
+async fn fetch_bnb_mark_price(client: &Client) -> Result<f64, Box<dyn std::error::Error>> {
+    let resp = client
+        .get(BINANCE_PREMIUM_INDEX_URL)
+        .send()
         .await?
         .json::<PremiumIndexResponse>()
         .await?;
@@ -65,8 +69,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let api_key = args[4].trim().to_string();
     let api_secret = args[5].trim().to_string();
 
+    let client = reqwest::Client::builder()
+        .resolve("fapi.binance.com", "127.0.0.1:8080".parse()?)
+        .build()?;
+    let client = Arc::new(client);
     let perps_client = BinancePerpsClient::new(
-        reqwest::Client::new(),
+        Arc::clone(&client),
         api_key,
         api_secret,
         "https://fapi.binance.com".to_string(),
@@ -77,7 +85,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         BINANCE_PERPS_SYMBOL, position_resp
     );
 
-    let bnb_mark_price = fetch_bnb_mark_price().await?;
+    let bnb_mark_price = fetch_bnb_mark_price(&client).await?;
     println!("BNB mark price (BNBUSDT): {}", bnb_mark_price);
 
     let provider = RootProvider::<Ethereum>::new_http(rpc_url.parse()?).erased();
