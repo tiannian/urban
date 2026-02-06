@@ -73,12 +73,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // .resolve("fapi.binance.com", "127.0.0.1:8080".parse()?)
         .build()?;
     let client = Arc::new(client);
-    let perps_client = BinancePerpsClient::new(
-        Arc::clone(&client),
+    let perps_config = binance::BinancePerpsClientConfig {
+        client: Arc::clone(&client),
         api_key,
         api_secret,
-        "https://fapi.binance.com".to_string(),
-    );
+        base_url: "https://fapi.binance.com".to_string(),
+    };
+    let perps_client = BinancePerpsClient::new(perps_config);
     let position_resp = perps_client.get_position(BINANCE_PERPS_SYMBOL).await?;
     println!(
         "Binance perps position ({}): {:?}",
@@ -88,9 +89,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let bnb_mark_price = fetch_bnb_mark_price(&client).await?;
     println!("BNB mark price (BNBUSDT): {}", bnb_mark_price);
 
-    let provider = RootProvider::<Ethereum>::new_http(rpc_url.parse()?).erased();
-
-    let mut manager = UniswapV3PositionManager::new(contract_address, provider);
+    let provider = Arc::new(RootProvider::<Ethereum>::new_http(rpc_url.parse()?).erased());
+    let uniswap_config = uniswapv3::UniswapV3PositionManagerConfig {
+        address: contract_address,
+        provider,
+    };
+    let mut manager = UniswapV3PositionManager::new(uniswap_config);
     manager.sync_lp(owner).await?;
 
     let positions = manager.positions();

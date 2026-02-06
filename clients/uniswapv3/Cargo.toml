@@ -10,4 +10,5 @@ path = "src/lib.rs"
 [dependencies]
 alloy.workspace = true
 anyhow.workspace = true
+serde = { workspace = true }
 tokio.workspace = true

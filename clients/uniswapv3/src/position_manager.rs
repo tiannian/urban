@@ -4,7 +4,9 @@ use alloy::eips::BlockId;
 use alloy::primitives::{Address, U256};
 use alloy::providers::{DynProvider, Provider};
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
 use crate::contracts::{CollectParams, DecreaseLiquidityParams, IPositionManager};
 
@@ -29,10 +31,55 @@ pub struct PositionData {
     pub collectable_amount1: U256,
 }
 
+/// Configuration for UniswapV3PositionManager
+#[derive(Debug, Clone)]
+pub struct UniswapV3PositionManagerConfig {
+    /// The contract address of the Uniswap V3 PositionManager contract
+    pub address: Address,
+    /// Provider instance for making RPC calls to the blockchain
+    pub provider: Arc<DynProvider>,
+}
+
+impl Serialize for UniswapV3PositionManagerConfig {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut state = serializer.serialize_struct("UniswapV3PositionManagerConfig", 1)?;
+        state.serialize_field("address", &self.address)?;
+        state.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for UniswapV3PositionManagerConfig {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct Helper {
+            address: Address,
+        }
+        let helper = Helper::deserialize(deserializer)?;
+        Ok(UniswapV3PositionManagerConfig {
+            address: helper.address,
+            provider: Arc::new(
+                alloy::providers::RootProvider::<alloy::network::Ethereum>::new_http(
+                    "https://eth.llamarpc.com"
+                        .parse()
+                        .map_err(|e| serde::de::Error::custom(format!("{}", e)))?,
+                )
+                .erased(),
+            ),
+        })
+    }
+}
+
 /// UniswapV3PositionManager provides functionality to interact with Uniswap V3 PositionManager contracts
 pub struct UniswapV3PositionManager {
     /// PositionManager contract instance for making RPC calls
-    position_manager: IPositionManager::IPositionManagerInstance<DynProvider>,
+    position_manager: IPositionManager::IPositionManagerInstance<Arc<DynProvider>>,
     /// Internal cache of position data keyed by token ID
     positions: BTreeMap<U256, PositionData>,
 }
@@ -41,13 +88,12 @@ impl UniswapV3PositionManager {
     /// Creates a new `UniswapV3PositionManager` instance
     ///
     /// # Arguments
-    /// * `address` - The contract address of the Uniswap V3 PositionManager contract
-    /// * `provider` - A `DynProvider` instance for making RPC calls to the blockchain
+    /// * `config` - A `UniswapV3PositionManagerConfig` instance containing the contract address and provider
     ///
     /// # Returns
     /// A new `UniswapV3PositionManager` instance with the `PositionManagerInstance` initialized at the given address
-    pub fn new(address: Address, provider: DynProvider) -> Self {
-        let position_manager = IPositionManager::new(address, provider);
+    pub fn new(config: UniswapV3PositionManagerConfig) -> Self {
+        let position_manager = IPositionManager::new(config.address, config.provider);
         Self {
             position_manager,
             positions: BTreeMap::new(),
