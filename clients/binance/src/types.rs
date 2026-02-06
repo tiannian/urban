@@ -4,12 +4,13 @@ use serde::Deserialize;
 #[derive(Debug, Clone, Deserialize)]
 pub struct Position {
     pub symbol: String,
-    pub position_side: String,
+    pub position_side: Option<String>,
     pub position_amt: String,
     pub entry_price: String,
     pub break_even_price: String,
     pub mark_price: String,
-    pub unrealized_profit: String,
+    #[serde(rename = "unRealizedProfit")]
+    pub unrealized_pnl: String,
     pub liquidation_price: String,
     pub isolated_margin: String,
     pub notional: String,
