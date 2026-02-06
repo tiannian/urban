@@ -11,5 +11,7 @@ path = "src/lib.rs"
 hex = "0.4"
 hmac = "0.12"
 reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
 sha2 = "0.10"
 url = { workspace = true }
