@@ -70,7 +70,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let api_secret = args[5].trim().to_string();
 
     let client = reqwest::Client::builder()
-        .resolve("fapi.binance.com", "127.0.0.1:8080".parse()?)
+        // .resolve("fapi.binance.com", "127.0.0.1:8080".parse()?)
         .build()?;
     let client = Arc::new(client);
     let perps_client = BinancePerpsClient::new(
