@@ -105,6 +105,20 @@ impl UniswapV3PositionManager {
         &self.positions
     }
 
+    /// Gets the current block number from the blockchain provider
+    ///
+    /// # Returns
+    /// `Result<u64>` - The current block number, or an error if the request fails
+    pub async fn get_block_number(&self) -> Result<u64> {
+        let block = self
+            .position_manager
+            .provider()
+            .get_block(BlockId::latest())
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("failed to get latest block"))?;
+        Ok(block.number())
+    }
+
     /// Synchronizes the internal `BTreeMap` with the current on-chain state of all positions owned by the specified address
     ///
     /// This function performs the following steps:
