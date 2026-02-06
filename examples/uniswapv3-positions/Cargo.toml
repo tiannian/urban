@@ -11,5 +11,7 @@ path = "src/main.rs"
 uniswapv3 = { path = "../../clients/uniswapv3", package = "clients-uniswapv3" }
 alloy.workspace = true
 anyhow.workspace = true
+reqwest.workspace = true
+serde.workspace = true
 tokio.workspace = true
 url.workspace = true

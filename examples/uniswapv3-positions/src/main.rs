@@ -1,16 +1,45 @@
 //! Uniswap V3 positions example: sync and print all positions for an owner.
+//! Uses Binance Futures API mark price (BNBUSDT) to compute withdrawable/collectable in USD.
 //! Usage: uniswapv3-positions <owner_address> <contract_address> <rpc_url>
+//! token0 = USD, token1 = BNB.
 
 use alloy::network::Ethereum;
 use alloy::primitives::U256;
 use alloy::providers::{Provider, RootProvider};
+use serde::Deserialize;
 use std::str::FromStr;
 use uniswapv3::UniswapV3PositionManager;
+
+const BINANCE_PREMIUM_INDEX_URL: &str =
+    "https://fapi.binance.com/fapi/v1/premiumIndex?symbol=BNBUSDT";
+
+#[derive(Debug, Deserialize)]
+struct PremiumIndexResponse {
+    #[serde(rename = "markPrice")]
+    mark_price: String,
+}
 
 fn format_amount_18(value: U256) -> String {
     let divisor = U256::from(10u64).pow(U256::from(18u64));
     let (integer, frac) = value.div_rem(divisor);
     format!("{}.{:0>18}", integer, frac)
+}
+
+fn u256_to_f64_18(value: U256) -> f64 {
+    let divisor = U256::from(10u64).pow(U256::from(18u64));
+    let (integer, frac) = value.div_rem(divisor);
+    let frac_str = format!("{:0>18}", frac);
+    let combined = format!("{}.{}", integer, frac_str);
+    combined.parse().unwrap_or(0.0)
+}
+
+async fn fetch_bnb_mark_price() -> Result<f64, Box<dyn std::error::Error>> {
+    let resp = reqwest::get(BINANCE_PREMIUM_INDEX_URL)
+        .await?
+        .json::<PremiumIndexResponse>()
+        .await?;
+    let price: f64 = resp.mark_price.parse()?;
+    Ok(price)
 }
 
 #[tokio::main]
@@ -30,6 +59,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let contract_address = alloy::primitives::Address::from_str(args[2].trim())?;
     let rpc_url = args[3].trim();
 
+    let bnb_mark_price = fetch_bnb_mark_price().await?;
+    println!("BNB mark price (BNBUSDT): {}", bnb_mark_price);
+
     let provider = RootProvider::<Ethereum>::new_http(rpc_url.parse()?).erased();
 
     let mut manager = UniswapV3PositionManager::new(contract_address, provider);
@@ -38,10 +70,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let positions = manager.positions();
     println!("Owner: {} | Positions: {}", owner, positions.len());
     for (token_id, pos) in positions {
+        let w0 = u256_to_f64_18(pos.withdrawable_amount0);
+        let w1 = u256_to_f64_18(pos.withdrawable_amount1);
+        let c0 = u256_to_f64_18(pos.collectable_amount0);
+        let c1 = u256_to_f64_18(pos.collectable_amount1);
+        let withdrawable_usd = w0 + w1 * bnb_mark_price;
+        let collectable_usd = c0 + c1 * bnb_mark_price;
+
         println!("---");
         println!("  token_id: {}", token_id);
-        println!("  token0:  {}", pos.token0);
-        println!("  token1:  {}", pos.token1);
+        println!("  token0:  {} (USD)", pos.token0);
+        println!("  token1:  {} (BNB)", pos.token1);
         println!("  liquidity: {}", pos.liquidity);
         println!(
             "  withdrawable_amount0 (18 decimals): {}",
@@ -59,6 +98,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "  collectable_amount1 (18 decimals): {}",
             format_amount_18(pos.collectable_amount1)
         );
+        println!("  withdrawable (USD): {}", withdrawable_usd);
+        println!("  collectable (USD): {}", collectable_usd);
     }
 
     Ok(())
