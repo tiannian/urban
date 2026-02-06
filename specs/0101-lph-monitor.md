@@ -21,9 +21,11 @@
 - **Futures venue**: A CEX that exposes:
   - Perpetual futures position size per symbol (e.g., `BNBUSDT_PERP`).
   - Account-level balances (e.g., USDT balance, unrealized PnL, margin balance).
+  - The monitoring service uses `BinancePerpsClient` (as defined in `0104-binance-client.md`) to read futures position data from Binance.
 - **On-chain venue**: An AMM (e.g., Uniswap V2/V3 or equivalent) where the LP position holds:
   - `BASE` tokens (e.g., `BNB`, `ETH`).
   - `USDT` as the quote/stable asset.
+  - The monitoring service uses `UniswapV3PositionManager` (as defined in `0103-uniswapv3-client.md`) to read LP position data from Uniswap V3.
 - **Pair type**: `BASE/USDT`, with `BASE` a volatile asset.
 - **Goal**: Provide a single, consistent view of:
   - Net `BASE` exposure.
@@ -43,6 +45,120 @@
 - `total_value_usdt`: Total combined notional value in USDT across both accounts.
 
  Unless specified otherwise, all balances and positions are assumed to be point-in-time snapshots taken at the same monitoring tick.
+
+## Detailed Specifications
+
+### LPHMonitor Structure
+
+The `LPHMonitor` type is the main monitoring structure that aggregates data from both the on-chain AMM position and the CEX futures account. It contains two client instances for reading data from their respective sources.
+
+The `LPHMonitor` type contains:
+
+- `uniswap_client`: An instance of `UniswapV3PositionManager` (as defined in `0103-uniswapv3-client.md`) used to read LP position data from Uniswap V3.
+- `binance_client`: An instance of `BinancePerpsClient` (as defined in `0104-binance-client.md`) used to read futures position data from Binance.
+
+**Constructor**
+
+```rust
+fn new(
+    uniswap_client: UniswapV3PositionManager,
+    binance_client: BinancePerpsClient,
+) -> Self
+```
+
+- Creates a new `LPHMonitor` instance.
+- **Parameters:**
+  - `uniswap_client`: An initialized `UniswapV3PositionManager` instance for reading on-chain LP positions.
+  - `binance_client`: An initialized `BinancePerpsClient` instance for reading Binance futures positions.
+- **Returns:** A new `LPHMonitor` instance with both clients configured.
+
+### status Function
+
+**Function Signature**
+
+```rust
+async fn status(
+    &mut self,
+    owner: Address,
+    symbol: &str,
+    base_token_address: Address,
+    usdt_token_address: Address,
+) -> Result<MonitoringSnapshot, Box<dyn std::error::Error>>
+```
+
+**Function Behavior**
+
+The `status` function performs a complete monitoring cycle by reading data from both clients and computing the monitoring metrics. The function performs the following steps:
+
+1. **Read AMM LP Position Data**
+   - Call `self.uniswap_client.sync_lp(owner).await?` to synchronize the Uniswap V3 position data.
+   - Iterate through `self.uniswap_client.positions` to find the position matching the specified `base_token_address` and `usdt_token_address`.
+   - Extract `amm_base_amount` and `amm_usdt_amount` from the matching position's `withdrawable_amount0` and `withdrawable_amount1` fields.
+     - Determine which token is `BASE` and which is `USDT` by comparing addresses.
+     - Convert amounts to decimal representation (accounting for token decimals).
+
+2. **Read Binance Futures Position Data**
+   - Call `self.binance_client.get_position(symbol).await?` to retrieve position information from Binance.
+   - Parse the returned `Vec<Position>` to find the position matching the specified `symbol`.
+   - Extract `futures_position` from the `position_amt` field (convert from string to decimal, preserving sign).
+   - Extract `futures_balance_usdt` from the `isolated_wallet` or `isolated_margin` field (convert from string to decimal).
+   - Optionally extract `unrealized_pnl_usdt` from the `unrealized_pnl` field.
+   - Extract `base_price_usdt` from the `mark_price` field for price reference.
+
+3. **Compute Monitoring Metrics**
+   - Compute `base_delta = amm_base_amount + futures_position`.
+   - Compute `base_reference = max(|amm_base_amount|, |futures_position|, epsilon)` where `epsilon` is a small positive constant (e.g., `1e-8`).
+   - Compute `base_delta_ratio = base_delta / base_reference`.
+   - Compute `amm_base_value_usdt = amm_base_amount * base_price_usdt`.
+   - Compute `amm_total_value_usdt = amm_base_value_usdt + amm_usdt_amount`.
+   - Compute `total_value_usdt = amm_total_value_usdt + futures_balance_usdt`.
+
+4. **Build and Return Monitoring Snapshot**
+   - Create a `MonitoringSnapshot` structure containing all computed fields:
+     - `timestamp`: Current Unix timestamp.
+     - `symbol`: The futures symbol.
+     - `amm_base_amount`: Amount of BASE tokens in the LP position.
+     - `amm_usdt_amount`: Amount of USDT tokens in the LP position.
+     - `futures_position`: Net futures position in BASE units (signed).
+     - `futures_balance_usdt`: USDT balance on the futures account.
+     - `base_price_usdt`: Current BASE price in USDT.
+     - `base_delta`: Net BASE exposure (`amm_base_amount + futures_position`).
+     - `base_delta_ratio`: Relative deviation ratio.
+     - `amm_total_value_usdt`: Total AMM position value in USDT.
+     - `total_value_usdt`: Total combined value in USDT.
+   - Return the snapshot.
+
+**Parameters:**
+- `owner`: The Ethereum address that owns the Uniswap V3 LP positions.
+- `symbol`: The Binance futures symbol (e.g., `BTCUSDT`).
+- `base_token_address`: The Ethereum address of the BASE token (e.g., BNB, ETH).
+- `usdt_token_address`: The Ethereum address of the USDT token.
+
+**Returns:** A `MonitoringSnapshot` structure containing all monitoring metrics, or an error if data reading or computation fails.
+
+**Error Handling**
+
+- If `sync_lp` fails, the function returns an error.
+- If no matching Uniswap position is found for the specified token addresses, the function returns an error.
+- If `get_position` fails, the function returns an error.
+- If no matching Binance position is found for the specified symbol, the function may return an error or use zero values depending on implementation policy.
+- If any computation fails (e.g., division by zero despite epsilon check), the function returns an error.
+
+**MonitoringSnapshot Structure**
+
+The `MonitoringSnapshot` structure contains the following fields:
+
+- `timestamp`: i64 - Unix timestamp in milliseconds.
+- `symbol`: String - Futures symbol.
+- `amm_base_amount`: Decimal or f64 - Amount of BASE tokens in LP position.
+- `amm_usdt_amount`: Decimal or f64 - Amount of USDT tokens in LP position.
+- `futures_position`: Decimal or f64 - Net futures position in BASE units (positive = long, negative = short).
+- `futures_balance_usdt`: Decimal or f64 - USDT balance on futures account.
+- `base_price_usdt`: Decimal or f64 - Current BASE price in USDT.
+- `base_delta`: Decimal or f64 - Net BASE exposure.
+- `base_delta_ratio`: Decimal or f64 - Relative deviation ratio.
+- `amm_total_value_usdt`: Decimal or f64 - Total AMM position value in USDT.
+- `total_value_usdt`: Decimal or f64 - Total combined value in USDT.
 
 ## High-Level Monitoring Flow
 
@@ -229,6 +345,8 @@ Messages should be concise and human-readable, and may use Markdown or HTML form
 ## References
 
 - `0100-lp-hedging.md` for hedging strategy details.
+- `0103-uniswapv3-client.md` for UniswapV3PositionManager client interface and usage.
+- `0104-binance-client.md` for BinancePerpsClient interface and usage.
 - CEX futures API documentation for position and balance queries.
 - AMM documentation for LP position accounting and token amount calculations.
 - Telegram Bot API documentation for sending messages and formatting options.
