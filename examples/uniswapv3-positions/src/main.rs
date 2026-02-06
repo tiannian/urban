@@ -1,11 +1,13 @@
 //! Uniswap V3 positions example: sync and print all positions for an owner.
 //! Uses Binance Futures API mark price (BNBUSDT) to compute withdrawable/collectable in USD.
-//! Usage: uniswapv3-positions <owner_address> <contract_address> <rpc_url>
+//! Usage: uniswapv3-positions <owner_address> <contract_address> <rpc_url> <binance_api_key> <binance_api_secret>
+//! Fetches Binance perps position for BNBUSDC using the given key/secret.
 //! token0 = USD, token1 = BNB.
 
 use alloy::network::Ethereum;
 use alloy::primitives::U256;
 use alloy::providers::{Provider, RootProvider};
+use binance::BinancePerpsClient;
 use serde::Deserialize;
 use std::str::FromStr;
 use uniswapv3::UniswapV3PositionManager;
@@ -44,10 +46,12 @@ async fn fetch_bnb_mark_price() -> Result<f64, Box<dyn std::error::Error>> {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    const BINANCE_PERPS_SYMBOL: &str = "BNBUSDC";
+
     let args: Vec<String> = std::env::args().collect();
-    if args.len() < 4 {
+    if args.len() < 6 {
         eprintln!(
-            "Usage: {} <owner_address> <contract_address> <rpc_url>",
+            "Usage: {} <owner_address> <contract_address> <rpc_url> <binance_api_key> <binance_api_secret>",
             args.first()
                 .map(|s| s.as_str())
                 .unwrap_or("uniswapv3-positions")
@@ -58,6 +62,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let owner = alloy::primitives::Address::from_str(args[1].trim())?;
     let contract_address = alloy::primitives::Address::from_str(args[2].trim())?;
     let rpc_url = args[3].trim();
+    let api_key = args[4].trim().to_string();
+    let api_secret = args[5].trim().to_string();
+
+    let perps_client = BinancePerpsClient::new(
+        reqwest::Client::new(),
+        api_key,
+        api_secret,
+        "https://fapi.binance.com".to_string(),
+    );
+    let position_resp = perps_client.get_position(BINANCE_PERPS_SYMBOL).await?;
+    println!(
+        "Binance perps position ({}): {}",
+        BINANCE_PERPS_SYMBOL, position_resp
+    );
 
     let bnb_mark_price = fetch_bnb_mark_price().await?;
     println!("BNB mark price (BNBUSDT): {}", bnb_mark_price);
