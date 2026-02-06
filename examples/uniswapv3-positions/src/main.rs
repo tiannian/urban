@@ -92,9 +92,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let provider = Arc::new(RootProvider::<Ethereum>::new_http(rpc_url.parse()?).erased());
     let uniswap_config = uniswapv3::UniswapV3PositionManagerConfig {
         address: contract_address,
-        provider,
     };
-    let mut manager = UniswapV3PositionManager::new(uniswap_config);
+    let mut manager = UniswapV3PositionManager::new(uniswap_config, provider);
     manager.sync_lp(owner).await?;
 
     let positions = manager.positions();

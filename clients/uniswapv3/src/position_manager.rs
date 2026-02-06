@@ -36,8 +36,6 @@ pub struct PositionData {
 pub struct UniswapV3PositionManagerConfig {
     /// The contract address of the Uniswap V3 PositionManager contract
     pub address: Address,
-    /// Provider instance for making RPC calls to the blockchain
-    pub provider: Arc<DynProvider>,
 }
 
 impl Serialize for UniswapV3PositionManagerConfig {
@@ -64,14 +62,6 @@ impl<'de> Deserialize<'de> for UniswapV3PositionManagerConfig {
         let helper = Helper::deserialize(deserializer)?;
         Ok(UniswapV3PositionManagerConfig {
             address: helper.address,
-            provider: Arc::new(
-                alloy::providers::RootProvider::<alloy::network::Ethereum>::new_http(
-                    "https://eth.llamarpc.com"
-                        .parse()
-                        .map_err(|e| serde::de::Error::custom(format!("{}", e)))?,
-                )
-                .erased(),
-            ),
         })
     }
 }
@@ -88,12 +78,13 @@ impl UniswapV3PositionManager {
     /// Creates a new `UniswapV3PositionManager` instance
     ///
     /// # Arguments
-    /// * `config` - A `UniswapV3PositionManagerConfig` instance containing the contract address and provider
+    /// * `config` - A `UniswapV3PositionManagerConfig` instance containing the contract address
+    /// * `provider` - Provider instance for making RPC calls to the blockchain
     ///
     /// # Returns
     /// A new `UniswapV3PositionManager` instance with the `PositionManagerInstance` initialized at the given address
-    pub fn new(config: UniswapV3PositionManagerConfig) -> Self {
-        let position_manager = IPositionManager::new(config.address, config.provider);
+    pub fn new(config: UniswapV3PositionManagerConfig, provider: Arc<DynProvider>) -> Self {
+        let position_manager = IPositionManager::new(config.address, provider);
         Self {
             position_manager,
             positions: BTreeMap::new(),
