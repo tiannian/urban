@@ -74,12 +74,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build()?;
     let client = Arc::new(client);
     let perps_config = binance::BinancePerpsClientConfig {
-        client: Arc::clone(&client),
         api_key,
         api_secret,
         base_url: "https://fapi.binance.com".to_string(),
     };
-    let perps_client = BinancePerpsClient::new(perps_config);
+    let perps_client = BinancePerpsClient::new(Arc::clone(&client), perps_config);
     let position_resp = perps_client.get_position(BINANCE_PERPS_SYMBOL).await?;
     println!(
         "Binance perps position ({}): {:?}",
