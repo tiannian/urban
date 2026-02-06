@@ -34,23 +34,26 @@ The `BinancePerpsClient` type contains:
 - `api_secret`: String containing the Binance API secret.
 - `base_url`: String containing the base URL for API endpoints.
 
+**BinancePerpsClientConfig Structure**
+
+The `BinancePerpsClientConfig` structure contains:
+
+- `client`: An `Arc<reqwest::Client>` instance for making HTTP requests.
+- `api_key`: String containing the Binance API key.
+- `api_secret`: String containing the Binance API secret.
+- `base_url`: String containing the base URL for API endpoints.
+
+The `BinancePerpsClientConfig` structure must derive `serde::Serialize` and `serde::Deserialize` for serialization support.
+
 **Constructor**
 
 ```rust
-fn new(
-    client: Arc<reqwest::Client>,
-    api_key: String,
-    api_secret: String,
-    base_url: String,
-) -> Self
+fn new(config: BinancePerpsClientConfig) -> Self
 ```
 
 - Creates a new `BinancePerpsClient` instance.
 - **Parameters:**
-  - `client`: A shared `Arc<reqwest::Client>` instance for HTTP requests.
-  - `api_key`: The Binance API key string.
-  - `api_secret`: The Binance API secret string.
-  - `base_url`: The base URL for Binance Futures API (e.g., `https://fapi.binance.com`).
+  - `config`: A `BinancePerpsClientConfig` instance containing all configuration parameters and the HTTP client instance.
 - **Returns:** A new `BinancePerpsClient` instance with the provided configuration.
 
 ### Position Structure
@@ -253,7 +256,13 @@ let api_key = "your_api_key".to_string();
 let api_secret = "your_api_secret".to_string();
 let base_url = "https://fapi.binance.com".to_string();
 
-let binance_client = BinancePerpsClient::new(client, api_key, api_secret, base_url);
+let config = BinancePerpsClientConfig {
+    client,
+    api_key,
+    api_secret,
+    base_url,
+};
+let binance_client = BinancePerpsClient::new(config);
 ```
 
 ### Querying Position Information

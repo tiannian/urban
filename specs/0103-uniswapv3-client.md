@@ -30,16 +30,24 @@ The `UniswapV3PositionManager` type contains:
 - `position_manager`: A `PositionManagerInstance<Arc<DynProvider>>` instance that provides direct access to PositionManager contract functions. This instance is generated from the `sol!` macro defined in `0102-contract-interface.md`.
 - `positions`: A `BTreeMap<u256, PositionData>` that maps position token IDs to their associated data.
 
+**UniswapV3PositionManagerConfig Structure**
+
+The `UniswapV3PositionManagerConfig` structure contains:
+
+- `address`: The contract address of the Uniswap V3 PositionManager contract.
+- `provider`: An `Arc<DynProvider>` instance for making RPC calls to the blockchain.
+
+The `UniswapV3PositionManagerConfig` structure must derive `serde::Serialize` and `serde::Deserialize` for serialization support.
+
 **Constructor**
 
 ```rust
-fn new(address: Address, provider: Arc<DynProvider>) -> Self
+fn new(config: UniswapV3PositionManagerConfig) -> Self
 ```
 
 - Creates a new `UniswapV3PositionManager` instance.
 - **Parameters:**
-  - `address`: The contract address of the Uniswap V3 PositionManager contract.
-  - `provider`: An `Arc<DynProvider>` instance for making RPC calls to the blockchain.
+  - `config`: A `UniswapV3PositionManagerConfig` instance containing the contract address and provider.
 - **Returns:** A new `UniswapV3PositionManager` instance with the `PositionManagerInstance` initialized at the given address.
 
 **PositionData Structure**
@@ -126,7 +134,11 @@ To populate the position cache for the first time:
 ```rust
 let provider: Arc<DynProvider> = ...; // Initialize provider
 let position_manager_address = Address::from_str("...")?;
-let mut manager = UniswapV3PositionManager::new(position_manager_address, provider);
+let config = UniswapV3PositionManagerConfig {
+    address: position_manager_address,
+    provider,
+};
+let mut manager = UniswapV3PositionManager::new(config);
 manager.sync_lp(owner_address).await?;
 ```
 

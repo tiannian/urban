@@ -61,27 +61,28 @@ The `LPHMonitor` type contains:
 - `base_token_address`: The Ethereum address of the BASE token (e.g., BNB, ETH).
 - `usdt_token_address`: The Ethereum address of the USDT token.
 
+**LPHMonitorConfig Structure**
+
+The `LPHMonitorConfig` structure contains:
+
+- `uniswap_client`: An instance of `UniswapV3PositionManager` (as defined in `0103-uniswapv3-client.md`) used to read LP position data from Uniswap V3.
+- `binance_client`: An instance of `BinancePerpsClient` (as defined in `0104-binance-client.md`) used to read futures position data from Binance.
+- `owner`: The Ethereum address that owns the Uniswap V3 LP positions.
+- `symbol`: The Binance futures symbol (e.g., `BTCUSDT`).
+- `base_token_address`: The Ethereum address of the BASE token (e.g., BNB, ETH).
+- `usdt_token_address`: The Ethereum address of the USDT token.
+
+The `LPHMonitorConfig` structure must derive `serde::Serialize` and `serde::Deserialize` for serialization support.
+
 **Constructor**
 
 ```rust
-fn new(
-    uniswap_client: UniswapV3PositionManager,
-    binance_client: BinancePerpsClient,
-    owner: Address,
-    symbol: String,
-    base_token_address: Address,
-    usdt_token_address: Address,
-) -> Self
+fn new(config: LPHMonitorConfig) -> Self
 ```
 
 - Creates a new `LPHMonitor` instance.
 - **Parameters:**
-  - `uniswap_client`: An initialized `UniswapV3PositionManager` instance for reading on-chain LP positions.
-  - `binance_client`: An initialized `BinancePerpsClient` instance for reading Binance futures positions.
-  - `owner`: The Ethereum address that owns the Uniswap V3 LP positions.
-  - `symbol`: The Binance futures symbol (e.g., `BTCUSDT`).
-  - `base_token_address`: The Ethereum address of the BASE token (e.g., BNB, ETH).
-  - `usdt_token_address`: The Ethereum address of the USDT token.
+  - `config`: A `LPHMonitorConfig` instance containing all configuration parameters and client instances.
 - **Returns:** A new `LPHMonitor` instance with both clients and configuration parameters configured.
 
 ### status Function
