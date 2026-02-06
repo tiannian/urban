@@ -4,10 +4,10 @@ use alloy::eips::BlockId;
 use alloy::primitives::{Address, U256};
 use alloy::providers::{DynProvider, Provider};
 use anyhow::Result;
-use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
+use crate::config::UniswapV3PositionManagerConfig;
 use crate::contracts::{CollectParams, DecreaseLiquidityParams, IPositionManager};
 
 /// Position data structure containing all relevant information for a position
@@ -29,41 +29,6 @@ pub struct PositionData {
     pub collectable_amount0: U256,
     /// Amount of token1 fees/rewards that can be collected
     pub collectable_amount1: U256,
-}
-
-/// Configuration for UniswapV3PositionManager
-#[derive(Debug, Clone)]
-pub struct UniswapV3PositionManagerConfig {
-    /// The contract address of the Uniswap V3 PositionManager contract
-    pub address: Address,
-}
-
-impl Serialize for UniswapV3PositionManagerConfig {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        use serde::ser::SerializeStruct;
-        let mut state = serializer.serialize_struct("UniswapV3PositionManagerConfig", 1)?;
-        state.serialize_field("address", &self.address)?;
-        state.end()
-    }
-}
-
-impl<'de> Deserialize<'de> for UniswapV3PositionManagerConfig {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        #[derive(Deserialize)]
-        struct Helper {
-            address: Address,
-        }
-        let helper = Helper::deserialize(deserializer)?;
-        Ok(UniswapV3PositionManagerConfig {
-            address: helper.address,
-        })
-    }
 }
 
 /// UniswapV3PositionManager provides functionality to interact with Uniswap V3 PositionManager contracts
