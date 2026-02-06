@@ -5,7 +5,7 @@ use serde::Deserialize;
 pub struct Position {
     pub symbol: String,
     #[serde(rename = "positionSide")]
-    pub position_side: Option<String>,
+    pub position_side: String,
     #[serde(rename = "positionAmt")]
     pub position_amt: String,
     #[serde(rename = "entryPrice")]
