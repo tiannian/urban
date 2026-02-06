@@ -1,5 +1,3 @@
-use reqwest::header;
-
 use crate::utils;
 
 /// Client for Binance perpetual futures (USDT-M) API.
@@ -32,13 +30,11 @@ impl BinancePerpsClient {
             ("recvWindow", "5000".to_string()),
         ];
         let signed_query = utils::sign_params(&self.api_secret, &params);
-        let url = format!("{}/fapi/v2/positionRisk", self.base_url);
+        let url = format!("{}/fapi/v3/positionRisk?{}", self.base_url, signed_query);
         let resp = self
             .client
-            .post(&url)
-            .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
+            .get(&url)
             .header("X-MBX-APIKEY", &self.api_key)
-            .body(signed_query)
             .send()
             .await?
             .text()
