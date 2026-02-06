@@ -1,23 +1,8 @@
 use std::sync::Arc;
 
-use serde::{Deserialize, Serialize};
-
+use crate::config::BinancePerpsClientConfig;
 use crate::types::Position;
 use crate::utils;
-
-/// Configuration for BinancePerpsClient
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BinancePerpsClientConfig {
-    /// HTTP client instance for making requests
-    #[serde(skip)]
-    pub client: Arc<reqwest::Client>,
-    /// Binance API key
-    pub api_key: String,
-    /// Binance API secret
-    pub api_secret: String,
-    /// Base URL for API endpoints
-    pub base_url: String,
-}
 
 /// Client for Binance perpetual futures (USDT-M) API.
 pub struct BinancePerpsClient {
@@ -31,13 +16,13 @@ impl BinancePerpsClient {
     /// Creates a new `BinancePerpsClient` instance
     ///
     /// # Arguments
-    /// * `config` - A `BinancePerpsClientConfig` instance containing all configuration parameters and the HTTP client instance
+    /// * `config` - A `BinancePerpsClientConfig` instance containing all configuration parameters
     ///
     /// # Returns
     /// A new `BinancePerpsClient` instance with the provided configuration
     pub fn new(config: BinancePerpsClientConfig) -> Self {
         Self {
-            client: config.client,
+            client: Arc::new(reqwest::Client::new()),
             api_key: config.api_key,
             api_secret: config.api_secret,
             base_url: config.base_url,
