@@ -27,7 +27,6 @@ impl BinancePerpsClient {
         let params: Vec<(&str, String)> = vec![
             ("symbol", pair.to_string()),
             ("timestamp", utils::binance_fapi_timestamp_ms()),
-            ("recvWindow", "5000".to_string()),
         ];
         let signed_query = utils::sign_params(&self.api_secret, &params);
         let url = format!("{}/fapi/v3/positionRisk?{}", self.base_url, signed_query);
