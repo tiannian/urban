@@ -3811,6 +3811,8 @@ dependencies = [
  "alloy",
  "anyhow",
  "clients-uniswapv3",
+ "reqwest",
+ "serde",
  "tokio",
  "url",
 ]
