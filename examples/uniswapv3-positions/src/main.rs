@@ -81,7 +81,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     let position_resp = perps_client.get_position(BINANCE_PERPS_SYMBOL).await?;
     println!(
-        "Binance perps position ({}): {}",
+        "Binance perps position ({}): {:?}",
         BINANCE_PERPS_SYMBOL, position_resp
     );
 
