@@ -41,6 +41,9 @@
 - `unrealized_pnl`: Unrealized PnL of the futures position in USDT (from CEX `unrealized_pnl` field).
 - `amm_base_amount`: Quantity of `BASE` held in the AMM LP position.
 - `amm_usdt_amount`: Quantity of `USDT` held in the AMM LP position.
+- `amm_collectable_base`: Quantity of `BASE` fees that can be collected from the AMM LP position (uncollected fees in BASE).
+- `amm_collectable_usdt`: Quantity of `USDT` fees that can be collected from the AMM LP position (uncollected fees in USDT).
+- `amm_collectable_value_usdt`: Total value in USDT of all collectable AMM fees; computed as `amm_collectable_base * base_price_usdt + amm_collectable_usdt` (the score/value of collectable fees).
 - `base_price_usdt`: Current price of `BASE` in USDT (e.g., from oracle, CEX ticker, or AMM price).
 - `base_delta_ratio`: Relative difference between `amm_base_amount` and `futures_position`.
 - `total_value_usdt`: Total combined notional value in USDT across both accounts (AMM value plus unrealized PnL).
@@ -104,6 +107,7 @@ The `status` function performs a complete monitoring cycle by reading data from 
    - Extract `amm_base_amount` and `amm_usdt_amount` from the matching position's `withdrawable_amount0` and `withdrawable_amount1` fields.
      - Determine which token is `BASE` and which is `USDT` by comparing addresses.
      - Convert amounts to decimal representation using 18 decimals for both tokens (see Scope and Assumptions).
+   - Extract `amm_collectable_base` and `amm_collectable_usdt` from the matching position's `collectable_amount0` and `collectable_amount1` fields, mapping to BASE and USDT by the same token address convention; convert to decimal representation using 18 decimals.
    - Obtain the current block number from the blockchain provider (via the Uniswap client's provider) and store it as `block_number`.
 
 2. **Read Binance Futures Position Data**
@@ -120,6 +124,7 @@ The `status` function performs a complete monitoring cycle by reading data from 
    - Compute `base_delta_ratio = base_delta / base_reference`.
    - Compute `amm_base_value_usdt = amm_base_amount * base_price_usdt`.
    - Compute `amm_total_value_usdt = amm_base_value_usdt + amm_usdt_amount`.
+   - Compute `amm_collectable_value_usdt = amm_collectable_base * base_price_usdt + amm_collectable_usdt` (the score/value of collectable AMM fees in USDT).
    - Compute `total_value_usdt = amm_total_value_usdt + unrealized_pnl`.
 
 4. **Build and Return Monitoring Snapshot**
@@ -128,6 +133,9 @@ The `status` function performs a complete monitoring cycle by reading data from 
      - `symbol`: The futures symbol (from `self.symbol`).
      - `amm_base_amount`: Amount of BASE tokens in the LP position.
      - `amm_usdt_amount`: Amount of USDT tokens in the LP position.
+     - `amm_collectable_base`: Amount of BASE that can be collected as fees from the LP position.
+     - `amm_collectable_usdt`: Amount of USDT that can be collected as fees from the LP position.
+     - `amm_collectable_value_usdt`: Total value in USDT of collectable AMM fees (score).
      - `futures_position`: Net futures position in BASE units (signed).
      - `unrealized_pnl`: Unrealized PnL of the futures position in USDT.
      - `futures_timestamp`: Timestamp from the Binance position data (from `update_time` field, in milliseconds since Unix epoch).
@@ -156,6 +164,9 @@ The `MonitoringSnapshot` structure contains the following fields:
 - `symbol`: String - Futures symbol.
 - `amm_base_amount`: Decimal or f64 - Amount of BASE tokens in LP position.
 - `amm_usdt_amount`: Decimal or f64 - Amount of USDT tokens in LP position.
+- `amm_collectable_base`: Decimal or f64 - Amount of BASE that can be collected as fees from the LP position.
+- `amm_collectable_usdt`: Decimal or f64 - Amount of USDT that can be collected as fees from the LP position.
+- `amm_collectable_value_usdt`: Decimal or f64 - Total value in USDT of collectable AMM fees (score).
 - `futures_position`: Decimal or f64 - Net futures position in BASE units (positive = long, negative = short).
 - `unrealized_pnl`: Decimal or f64 - Unrealized PnL of the futures position in USDT.
 - `futures_timestamp`: i64 - Timestamp from Binance position data (from `update_time` field, in milliseconds since Unix epoch).
@@ -202,11 +213,16 @@ The `MonitoringSnapshot` structure contains the following fields:
   - Raw token amounts for the LP position:
     - `amm_base_amount`
     - `amm_usdt_amount`
+  - Collectable (uncollected fee) amounts for the LP position:
+    - `amm_collectable_base`
+    - `amm_collectable_usdt`
   - Identification of which token is `BASE` and which is `USDT`.
 
 - **Output fields**
   - `amm_base_amount`
   - `amm_usdt_amount`
+  - `amm_collectable_base`
+  - `amm_collectable_usdt`
 
  If the AMM uses ticks/ranges, the calculation of `amm_base_amount` and `amm_usdt_amount` must be consistent with the AMM definition at the current price.
 
@@ -263,6 +279,9 @@ The `MonitoringSnapshot` structure contains the following fields:
   - `symbol`
   - `amm_base_amount`
   - `amm_usdt_amount`
+  - `amm_collectable_base`
+  - `amm_collectable_usdt`
+  - `amm_collectable_value_usdt`
   - `futures_position`
   - `unrealized_pnl`
   - `futures_timestamp`
@@ -326,6 +345,7 @@ Messages should be concise and human-readable, and may use Markdown or HTML form
   - `symbol`
   - `base_price_usdt`
   - `amm_base_amount`, `amm_usdt_amount`
+  - `amm_collectable_base`, `amm_collectable_usdt`, `amm_collectable_value_usdt`
   - `futures_position`, `unrealized_pnl`
   - `base_delta`, `base_delta_ratio`
   - `amm_total_value_usdt`, `total_value_usdt`
