@@ -172,8 +172,8 @@ impl LPHMonitor {
             amm_collectable_base * base_price_usdt + amm_collectable_usdt;
         let total_value_usdt = amm_total_value_usdt + unrealized_pnl;
 
-        // Step 4: Build and Return Monitoring Snapshot
-        Ok(MonitoringSnapshot {
+        // Step 4: Build Monitoring Snapshot and output message for Telegram etc.
+        let snapshot = MonitoringSnapshot {
             block_number,
             symbol: self.symbol.clone(),
             amm_base_amount,
@@ -189,7 +189,9 @@ impl LPHMonitor {
             base_delta_ratio,
             amm_total_value_usdt,
             total_value_usdt,
-        })
+        };
+        eprintln!("{}", snapshot.to_message());
+        Ok(snapshot)
     }
 }
 

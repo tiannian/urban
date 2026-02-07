@@ -36,3 +36,22 @@ pub struct MonitoringSnapshot {
     /// Total combined value in USDT (AMM value plus unrealized PnL)
     pub total_value_usdt: f64,
 }
+
+impl MonitoringSnapshot {
+    /// Builds a multi-line message string for pushing to Telegram or similar systems.
+    /// Numeric values use 4 decimal places except base_delta_ratio which uses 2.
+    pub fn to_message(&self) -> String {
+        let base_usd = self.amm_base_amount * self.base_price_usdt;
+        let line1 = format!(
+            "当前base token为 {:.4} {}({:.4} USD)",
+            self.amm_base_amount, self.symbol, base_usd
+        );
+        let line2 = format!("当前base token对冲差异比为 {:.2}", self.base_delta_ratio);
+        let line3 = format!("目前系统总资产为：{:.4}", self.total_value_usdt);
+        let line4 = format!(
+            "收益为 amm_collectable_value_usdt = {:.4} {} + {:.4} USD",
+            self.amm_collectable_base, self.symbol, self.amm_collectable_usdt
+        );
+        [line1, line2, line3, line4].join("\n")
+    }
+}
