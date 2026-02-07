@@ -1,0 +1,18 @@
+[package]
+name = "lph"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "lph"
+path = "src/main.rs"
+
+[dependencies]
+alloy.workspace = true
+anyhow.workspace = true
+clients-binance.workspace = true
+clients-uniswapv3.workspace = true
+reqwest.workspace = true
+strategy-lph.workspace = true
+tokio.workspace = true
+url.workspace = true
