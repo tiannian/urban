@@ -98,13 +98,10 @@ impl LPHMonitor {
                 )
             };
 
-        // Convert U256 amounts to f64 (assuming 18 decimals for BASE and 6 decimals for USDT)
-        // Note: In production, you should fetch actual token decimals from the contract
-        const BASE_DECIMALS: u32 = 18;
-        const USDT_DECIMALS: u32 = 6;
-
-        let amm_base_amount = u256_to_f64(amm_base_amount_raw, BASE_DECIMALS);
-        let amm_usdt_amount = u256_to_f64(amm_usdt_amount_raw, USDT_DECIMALS);
+        // Convert U256 amounts to f64 using 18 decimals for both tokens (spec 0101: Uniswap tokens use 18 decimals)
+        const UNISWAP_TOKEN_DECIMALS: u32 = 18;
+        let amm_base_amount = u256_to_f64(amm_base_amount_raw, UNISWAP_TOKEN_DECIMALS);
+        let amm_usdt_amount = u256_to_f64(amm_usdt_amount_raw, UNISWAP_TOKEN_DECIMALS);
 
         // Get current block number
         let block_number = self.uniswap_client.get_block_number().await?;
