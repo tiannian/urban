@@ -1,4 +1,4 @@
-//! LPH example: run LPH monitor once and print MonitoringSnapshot.
+//! LPH example: run LPH monitor once and print the monitoring message (e.g. for Telegram).
 //!
 //! Usage: lph <owner_address> <contract_address> <rpc_url> <binance_api_key> <binance_api_secret> \
 //!          <symbol> <base_token_address> <usdt_token_address>
@@ -8,32 +8,9 @@ use alloy::primitives::Address;
 use alloy::providers::{Provider, RootProvider};
 use clients_binance::BinancePerpsClient;
 use clients_uniswapv3::UniswapV3PositionManager;
-use lph::{LPHMonitor, LPHMonitorConfig, MonitoringSnapshot};
+use lph::{LPHMonitor, LPHMonitorConfig};
 use std::str::FromStr;
 use std::sync::Arc;
-
-fn print_snapshot(snapshot: &MonitoringSnapshot) {
-    println!("MonitoringSnapshot {{");
-    println!("  block_number: {}", snapshot.block_number);
-    println!("  symbol: \"{}\"", snapshot.symbol);
-    println!("  amm_base_amount: {}", snapshot.amm_base_amount);
-    println!("  amm_usdt_amount: {}", snapshot.amm_usdt_amount);
-    println!("  amm_collectable_base: {}", snapshot.amm_collectable_base);
-    println!("  amm_collectable_usdt: {}", snapshot.amm_collectable_usdt);
-    println!(
-        "  amm_collectable_value_usdt: {}",
-        snapshot.amm_collectable_value_usdt
-    );
-    println!("  futures_position: {}", snapshot.futures_position);
-    println!("  unrealized_pnl: {}", snapshot.unrealized_pnl);
-    println!("  futures_timestamp: {}", snapshot.futures_timestamp);
-    println!("  base_price_usdt: {}", snapshot.base_price_usdt);
-    println!("  base_delta: {}", snapshot.base_delta);
-    println!("  base_delta_ratio: {}", snapshot.base_delta_ratio);
-    println!("  amm_total_value_usdt: {}", snapshot.amm_total_value_usdt);
-    println!("  total_value_usdt: {}", snapshot.total_value_usdt);
-    println!("}}");
-}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -79,7 +56,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut monitor = LPHMonitor::new(config, uniswap_client, binance_client);
     let snapshot = monitor.status().await?;
     println!("{}", snapshot.to_message());
-    print_snapshot(&snapshot);
 
     Ok(())
 }
