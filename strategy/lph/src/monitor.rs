@@ -7,8 +7,8 @@ use alloy::primitives::{Address, U256};
 use anyhow::{anyhow, Result};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use binance::BinancePerpsClient;
-use uniswapv3::UniswapV3PositionManager;
+use clients_binance::BinancePerpsClient;
+use clients_uniswapv3::UniswapV3PositionManager;
 
 use crate::config::LPHMonitorConfig;
 use crate::types::MonitoringSnapshot;

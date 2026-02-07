@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 
 [lib]
-name = "binance"
+name = "clients_binance"
 path = "src/lib.rs"
 
 [dependencies]

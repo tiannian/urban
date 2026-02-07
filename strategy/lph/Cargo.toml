@@ -10,6 +10,6 @@ path = "src/lib.rs"
 [dependencies]
 alloy.workspace = true
 anyhow.workspace = true
-binance = { path = "../../clients/binance", package = "clients-binance" }
+clients-binance.workspace = true
+clients-uniswapv3.workspace = true
 serde = { workspace = true }
-uniswapv3 = { path = "../../clients/uniswapv3", package = "clients-uniswapv3" }

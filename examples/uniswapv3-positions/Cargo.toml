@@ -8,10 +8,10 @@ name = "uniswapv3-positions"
 path = "src/main.rs"
 
 [dependencies]
-binance = { path = "../../clients/binance", package = "clients-binance" }
-uniswapv3 = { path = "../../clients/uniswapv3", package = "clients-uniswapv3" }
 alloy.workspace = true
 anyhow.workspace = true
+clients-binance.workspace = true
+clients-uniswapv3.workspace = true
 reqwest.workspace = true
 serde.workspace = true
 tokio.workspace = true

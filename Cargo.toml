@@ -1,10 +1,8 @@
 [workspace]
 members = [
-    "clients/binance",
-    "clients/uniswapv3",
-    "examples/funding-rate-calculator",
-    "examples/uniswapv3-positions",
-    "strategy/lph",
+    "clients/*",
+    "examples/*",
+    "strategy/*",
 ]
 resolver = "2"
 
@@ -15,8 +13,11 @@ version = "0.1.0"
 [workspace.dependencies]
 alloy = { version = "1.6", features = ["contract", "eips", "network", "reqwest"] }
 anyhow = "1.0"
+clients-binance = { path = "clients/binance" }
+clients-uniswapv3 = { path = "clients/uniswapv3" }
 reqwest = { version = "0.12", features = ["json"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+strategy-lph = { path = "strategy/lph" }
 tokio = { version = "1", features = ["full"] }
 url = "2"

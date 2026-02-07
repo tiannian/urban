@@ -7,12 +7,12 @@
 use alloy::network::Ethereum;
 use alloy::primitives::U256;
 use alloy::providers::{Provider, RootProvider};
-use binance::BinancePerpsClient;
+use clients_binance::BinancePerpsClient;
+use clients_uniswapv3::UniswapV3PositionManager;
 use reqwest::Client;
 use serde::Deserialize;
 use std::str::FromStr;
 use std::sync::Arc;
-use uniswapv3::UniswapV3PositionManager;
 
 const BINANCE_PREMIUM_INDEX_URL: &str =
     "https://fapi.binance.com/fapi/v1/premiumIndex?symbol=BNBUSDT";
@@ -73,7 +73,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // .resolve("fapi.binance.com", "127.0.0.1:8080".parse()?)
         .build()?;
     let client = Arc::new(client);
-    let perps_config = binance::BinancePerpsClientConfig {
+    let perps_config = clients_binance::BinancePerpsClientConfig {
         api_key,
         api_secret,
         base_url: "https://fapi.binance.com".to_string(),
@@ -89,7 +89,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("BNB mark price (BNBUSDT): {}", bnb_mark_price);
 
     let provider = Arc::new(RootProvider::<Ethereum>::new_http(rpc_url.parse()?).erased());
-    let uniswap_config = uniswapv3::UniswapV3PositionManagerConfig {
+    let uniswap_config = clients_uniswapv3::UniswapV3PositionManagerConfig {
         address: contract_address,
     };
     let mut manager = UniswapV3PositionManager::new(uniswap_config, provider);
