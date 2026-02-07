@@ -5,7 +5,6 @@
 
 use alloy::primitives::{Address, U256};
 use anyhow::{anyhow, Result};
-use std::time::{SystemTime, UNIX_EPOCH};
 
 use clients_binance::BinancePerpsClient;
 use clients_uniswapv3::UniswapV3PositionManager;
@@ -125,11 +124,11 @@ impl LPHMonitor {
             .parse::<f64>()
             .map_err(|e| anyhow!("Failed to parse position_amt: {}", e))?;
 
-        // Extract futures balance (use isolated_wallet or isolated_margin)
-        let futures_balance_usdt = binance_position
-            .isolated_wallet
+        // Extract unrealized PnL from Binance position (in USDT)
+        let unrealized_pnl = binance_position
+            .unrealized_pnl
             .parse::<f64>()
-            .map_err(|e| anyhow!("Failed to parse isolated_wallet: {}", e))?;
+            .map_err(|e| anyhow!("Failed to parse unrealized_pnl: {}", e))?;
 
         // Extract base price
         let base_price_usdt = binance_position
@@ -154,22 +153,16 @@ impl LPHMonitor {
 
         let amm_base_value_usdt = amm_base_amount * base_price_usdt;
         let amm_total_value_usdt = amm_base_value_usdt + amm_usdt_amount;
-        let total_value_usdt = amm_total_value_usdt + futures_balance_usdt;
+        let total_value_usdt = amm_total_value_usdt + unrealized_pnl;
 
         // Step 4: Build and Return Monitoring Snapshot
-        let timestamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map_err(|e| anyhow!("Failed to get timestamp: {}", e))?
-            .as_millis() as i64;
-
         Ok(MonitoringSnapshot {
-            timestamp,
             block_number,
             symbol: self.symbol.clone(),
             amm_base_amount,
             amm_usdt_amount,
             futures_position,
-            futures_balance_usdt,
+            unrealized_pnl,
             futures_timestamp,
             base_price_usdt,
             base_delta,

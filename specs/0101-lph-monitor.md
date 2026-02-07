@@ -26,6 +26,7 @@
   - `BASE` tokens (e.g., `BNB`, `ETH`).
   - `USDT` as the quote/stable asset.
   - The monitoring service uses `UniswapV3PositionManager` (as defined in `0103-uniswapv3-client.md`) to read LP position data from Uniswap V3.
+- **Token decimals (Uniswap)**: In Uniswap, all tokens addressed by this monitor (BASE and USDT) are assumed to use **18 decimals**. Amounts read from the AMM (e.g. `withdrawable_amount0`, `withdrawable_amount1`) must be converted to decimal representation using 18 decimal places. Implementations that support other decimal conventions must document them and handle conversion consistently.
 - **Pair type**: `BASE/USDT`, with `BASE` a volatile asset.
 - **Goal**: Provide a single, consistent view of:
   - Net `BASE` exposure.
@@ -37,12 +38,12 @@
 - `base` / `BASE`: Volatile asset in the LP pair.
 - `quote`: Stable asset (`USDT`).
 - `futures_position`: Net position in the `BASE/USDT` perpetual futures on the CEX, in units of `BASE`.
-- `futures_balance_usdt`: USDT-denominated account balance on the CEX (can be margin balance, wallet balance, or a defined metric).
+- `unrealized_pnl`: Unrealized PnL of the futures position in USDT (from CEX `unrealized_pnl` field).
 - `amm_base_amount`: Quantity of `BASE` held in the AMM LP position.
 - `amm_usdt_amount`: Quantity of `USDT` held in the AMM LP position.
 - `base_price_usdt`: Current price of `BASE` in USDT (e.g., from oracle, CEX ticker, or AMM price).
 - `base_delta_ratio`: Relative difference between `amm_base_amount` and `futures_position`.
-- `total_value_usdt`: Total combined notional value in USDT across both accounts.
+- `total_value_usdt`: Total combined notional value in USDT across both accounts (AMM value plus unrealized PnL).
 
  Unless specified otherwise, all balances and positions are assumed to be point-in-time snapshots taken at the same monitoring tick.
 
@@ -102,15 +103,14 @@ The `status` function performs a complete monitoring cycle by reading data from 
    - Iterate through `self.uniswap_client.positions` to find the position matching `self.base_token_address` and `self.usdt_token_address`.
    - Extract `amm_base_amount` and `amm_usdt_amount` from the matching position's `withdrawable_amount0` and `withdrawable_amount1` fields.
      - Determine which token is `BASE` and which is `USDT` by comparing addresses.
-     - Convert amounts to decimal representation (accounting for token decimals).
+     - Convert amounts to decimal representation using 18 decimals for both tokens (see Scope and Assumptions).
    - Obtain the current block number from the blockchain provider (via the Uniswap client's provider) and store it as `block_number`.
 
 2. **Read Binance Futures Position Data**
    - Call `self.binance_client.get_position(&self.symbol).await?` to retrieve position information from Binance.
    - Parse the returned `Vec<Position>` to find the position matching `self.symbol`.
    - Extract `futures_position` from the `position_amt` field (convert from string to decimal, preserving sign).
-   - Extract `futures_balance_usdt` from the `isolated_wallet` or `isolated_margin` field (convert from string to decimal).
-   - Optionally extract `unrealized_pnl_usdt` from the `unrealized_pnl` field.
+   - Extract `unrealized_pnl` from the `unrealized_pnl` field (convert from string to decimal, in USDT).
    - Extract `base_price_usdt` from the `mark_price` field for price reference.
    - Extract `futures_timestamp` from the `update_time` field (already in milliseconds since Unix epoch).
 
@@ -120,17 +120,16 @@ The `status` function performs a complete monitoring cycle by reading data from 
    - Compute `base_delta_ratio = base_delta / base_reference`.
    - Compute `amm_base_value_usdt = amm_base_amount * base_price_usdt`.
    - Compute `amm_total_value_usdt = amm_base_value_usdt + amm_usdt_amount`.
-   - Compute `total_value_usdt = amm_total_value_usdt + futures_balance_usdt`.
+   - Compute `total_value_usdt = amm_total_value_usdt + unrealized_pnl`.
 
 4. **Build and Return Monitoring Snapshot**
    - Create a `MonitoringSnapshot` structure containing all computed fields:
-     - `timestamp`: Current Unix timestamp in milliseconds.
      - `block_number`: The current blockchain block number (from the on-chain data source).
      - `symbol`: The futures symbol (from `self.symbol`).
      - `amm_base_amount`: Amount of BASE tokens in the LP position.
      - `amm_usdt_amount`: Amount of USDT tokens in the LP position.
      - `futures_position`: Net futures position in BASE units (signed).
-     - `futures_balance_usdt`: USDT balance on the futures account.
+     - `unrealized_pnl`: Unrealized PnL of the futures position in USDT.
      - `futures_timestamp`: Timestamp from the Binance position data (from `update_time` field, in milliseconds since Unix epoch).
      - `base_price_usdt`: Current BASE price in USDT.
      - `base_delta`: Net BASE exposure (`amm_base_amount + futures_position`).
@@ -153,19 +152,18 @@ The `status` function performs a complete monitoring cycle by reading data from 
 
 The `MonitoringSnapshot` structure contains the following fields:
 
-- `timestamp`: i64 - Current Unix timestamp in milliseconds (when the snapshot was created).
 - `block_number`: u64 - The blockchain block number at which the on-chain LP position data was read.
 - `symbol`: String - Futures symbol.
 - `amm_base_amount`: Decimal or f64 - Amount of BASE tokens in LP position.
 - `amm_usdt_amount`: Decimal or f64 - Amount of USDT tokens in LP position.
 - `futures_position`: Decimal or f64 - Net futures position in BASE units (positive = long, negative = short).
-- `futures_balance_usdt`: Decimal or f64 - USDT balance on futures account.
+- `unrealized_pnl`: Decimal or f64 - Unrealized PnL of the futures position in USDT.
 - `futures_timestamp`: i64 - Timestamp from Binance position data (from `update_time` field, in milliseconds since Unix epoch).
 - `base_price_usdt`: Decimal or f64 - Current BASE price in USDT.
 - `base_delta`: Decimal or f64 - Net BASE exposure.
 - `base_delta_ratio`: Decimal or f64 - Relative deviation ratio.
 - `amm_total_value_usdt`: Decimal or f64 - Total AMM position value in USDT.
-- `total_value_usdt`: Decimal or f64 - Total combined value in USDT.
+- `total_value_usdt`: Decimal or f64 - Total combined value in USDT (AMM value plus unrealized PnL).
 
 ## High-Level Monitoring Flow
 
@@ -185,12 +183,11 @@ The `MonitoringSnapshot` structure contains the following fields:
 
 - **Required data**
   - `futures_position` (in `BASE` units, signed; positive = net long, negative = net short).
-  - `futures_balance_usdt` (chosen balance metric, e.g., margin balance or wallet balance in USDT).
-  - Optional: `unrealized_pnl_usdt` for more detailed reporting.
+  - `unrealized_pnl` (unrealized PnL of the futures position in USDT).
 
 - **Output fields**
   - `futures_position`
-  - `futures_balance_usdt`
+  - `unrealized_pnl`
 
 ### 2. Read AMM LP Token Balances
 
@@ -246,18 +243,15 @@ The `MonitoringSnapshot` structure contains the following fields:
     - `amm_base_value_usdt = amm_base_amount * base_price_usdt`
     - `amm_total_value_usdt = amm_base_value_usdt + amm_usdt_amount`
   - **CEX side**
-    - At minimum:
-      - `futures_balance_usdt` (already in USDT units).
-    - Optionally:
-      - Include `unrealized_pnl_usdt` in a separate field or incorporate it into the effective balance, depending on risk policy.
+    - `unrealized_pnl` is reported in the snapshot as a separate field (future pnl in USDT).
 
 - **Total**
-  - `total_value_usdt = amm_total_value_usdt + futures_balance_usdt`
+  - `total_value_usdt = amm_total_value_usdt + unrealized_pnl`
 
  Implementations may add more detailed breakdown fields, but the spec requires at least:
 
 - `amm_total_value_usdt`
-- `futures_balance_usdt`
+- `unrealized_pnl`
 - `total_value_usdt`
 
 ### 5. Emit Monitoring Snapshot
@@ -265,13 +259,12 @@ The `MonitoringSnapshot` structure contains the following fields:
  On each monitoring tick, the service emits a structured snapshot that can be logged, stored, or exposed via an API.
 
 - **Minimum snapshot fields**
-  - `timestamp`
   - `block_number`
   - `symbol`
   - `amm_base_amount`
   - `amm_usdt_amount`
   - `futures_position`
-  - `futures_balance_usdt`
+  - `unrealized_pnl`
   - `futures_timestamp`
   - `base_price_usdt`
   - `base_delta`
@@ -333,7 +326,7 @@ Messages should be concise and human-readable, and may use Markdown or HTML form
   - `symbol`
   - `base_price_usdt`
   - `amm_base_amount`, `amm_usdt_amount`
-  - `futures_position`, `futures_balance_usdt`
+  - `futures_position`, `unrealized_pnl`
   - `base_delta`, `base_delta_ratio`
   - `amm_total_value_usdt`, `total_value_usdt`
 

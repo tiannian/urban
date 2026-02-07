@@ -14,13 +14,12 @@ use std::sync::Arc;
 
 fn print_snapshot(snapshot: &MonitoringSnapshot) {
     println!("MonitoringSnapshot {{");
-    println!("  timestamp: {}", snapshot.timestamp);
     println!("  block_number: {}", snapshot.block_number);
     println!("  symbol: \"{}\"", snapshot.symbol);
     println!("  amm_base_amount: {}", snapshot.amm_base_amount);
     println!("  amm_usdt_amount: {}", snapshot.amm_usdt_amount);
     println!("  futures_position: {}", snapshot.futures_position);
-    println!("  futures_balance_usdt: {}", snapshot.futures_balance_usdt);
+    println!("  unrealized_pnl: {}", snapshot.unrealized_pnl);
     println!("  futures_timestamp: {}", snapshot.futures_timestamp);
     println!("  base_price_usdt: {}", snapshot.base_price_usdt);
     println!("  base_delta: {}", snapshot.base_delta);

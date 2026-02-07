@@ -5,8 +5,6 @@ use serde::{Deserialize, Serialize};
 /// Monitoring snapshot containing all computed metrics
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MonitoringSnapshot {
-    /// Current Unix timestamp in milliseconds
-    pub timestamp: i64,
     /// Blockchain block number at which the on-chain LP position data was read
     pub block_number: u64,
     /// Futures symbol
@@ -17,8 +15,8 @@ pub struct MonitoringSnapshot {
     pub amm_usdt_amount: f64,
     /// Net futures position in BASE units (positive = long, negative = short)
     pub futures_position: f64,
-    /// USDT balance on futures account
-    pub futures_balance_usdt: f64,
+    /// Unrealized PnL of the futures position in USDT
+    pub unrealized_pnl: f64,
     /// Timestamp from Binance position data (in milliseconds since Unix epoch)
     pub futures_timestamp: i64,
     /// Current BASE price in USDT
@@ -29,6 +27,6 @@ pub struct MonitoringSnapshot {
     pub base_delta_ratio: f64,
     /// Total AMM position value in USDT
     pub amm_total_value_usdt: f64,
-    /// Total combined value in USDT
+    /// Total combined value in USDT (AMM value plus unrealized PnL)
     pub total_value_usdt: f64,
 }
