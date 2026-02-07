@@ -18,6 +18,12 @@ fn print_snapshot(snapshot: &MonitoringSnapshot) {
     println!("  symbol: \"{}\"", snapshot.symbol);
     println!("  amm_base_amount: {}", snapshot.amm_base_amount);
     println!("  amm_usdt_amount: {}", snapshot.amm_usdt_amount);
+    println!("  amm_collectable_base: {}", snapshot.amm_collectable_base);
+    println!("  amm_collectable_usdt: {}", snapshot.amm_collectable_usdt);
+    println!(
+        "  amm_collectable_value_usdt: {}",
+        snapshot.amm_collectable_value_usdt
+    );
     println!("  futures_position: {}", snapshot.futures_position);
     println!("  unrealized_pnl: {}", snapshot.unrealized_pnl);
     println!("  futures_timestamp: {}", snapshot.futures_timestamp);

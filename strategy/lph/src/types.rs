@@ -13,6 +13,12 @@ pub struct MonitoringSnapshot {
     pub amm_base_amount: f64,
     /// Amount of USDT tokens in LP position
     pub amm_usdt_amount: f64,
+    /// Amount of BASE that can be collected as fees from the LP position
+    pub amm_collectable_base: f64,
+    /// Amount of USDT that can be collected as fees from the LP position
+    pub amm_collectable_usdt: f64,
+    /// Total value in USDT of collectable AMM fees (score)
+    pub amm_collectable_value_usdt: f64,
     /// Net futures position in BASE units (positive = long, negative = short)
     pub futures_position: f64,
     /// Unrealized PnL of the futures position in USDT

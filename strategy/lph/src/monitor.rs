@@ -97,10 +97,25 @@ impl LPHMonitor {
                 )
             };
 
+        let (amm_collectable_base_raw, amm_collectable_usdt_raw) =
+            if position_data.token0 == self.base_token_address {
+                (
+                    position_data.collectable_amount0,
+                    position_data.collectable_amount1,
+                )
+            } else {
+                (
+                    position_data.collectable_amount1,
+                    position_data.collectable_amount0,
+                )
+            };
+
         // Convert U256 amounts to f64 using 18 decimals for both tokens (spec 0101: Uniswap tokens use 18 decimals)
         const UNISWAP_TOKEN_DECIMALS: u32 = 18;
         let amm_base_amount = u256_to_f64(amm_base_amount_raw, UNISWAP_TOKEN_DECIMALS);
         let amm_usdt_amount = u256_to_f64(amm_usdt_amount_raw, UNISWAP_TOKEN_DECIMALS);
+        let amm_collectable_base = u256_to_f64(amm_collectable_base_raw, UNISWAP_TOKEN_DECIMALS);
+        let amm_collectable_usdt = u256_to_f64(amm_collectable_usdt_raw, UNISWAP_TOKEN_DECIMALS);
 
         // Get current block number
         let block_number = self.uniswap_client.get_block_number().await?;
@@ -153,6 +168,8 @@ impl LPHMonitor {
 
         let amm_base_value_usdt = amm_base_amount * base_price_usdt;
         let amm_total_value_usdt = amm_base_value_usdt + amm_usdt_amount;
+        let amm_collectable_value_usdt =
+            amm_collectable_base * base_price_usdt + amm_collectable_usdt;
         let total_value_usdt = amm_total_value_usdt + unrealized_pnl;
 
         // Step 4: Build and Return Monitoring Snapshot
@@ -161,6 +178,9 @@ impl LPHMonitor {
             symbol: self.symbol.clone(),
             amm_base_amount,
             amm_usdt_amount,
+            amm_collectable_base,
+            amm_collectable_usdt,
+            amm_collectable_value_usdt,
             futures_position,
             unrealized_pnl,
             futures_timestamp,
