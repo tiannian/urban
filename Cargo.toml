@@ -4,6 +4,7 @@ members = [
     "clients/uniswapv3",
     "examples/funding-rate-calculator",
     "examples/uniswapv3-positions",
+    "strategy/lph",
 ]
 resolver = "2"
 

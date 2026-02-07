@@ -8,17 +8,14 @@ use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use uniswapv3::{PositionData, UniswapV3PositionManager};
-use binance::{BinancePerpsClient, Position};
+use binance::BinancePerpsClient;
+use uniswapv3::UniswapV3PositionManager;
 
 /// Configuration for LPHMonitor
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LPHMonitorConfig {
     /// Uniswap V3 client instance
-    #[serde(skip)]
     pub uniswap_client: UniswapV3PositionManager,
     /// Binance futures client instance
-    #[serde(skip)]
     pub binance_client: BinancePerpsClient,
     /// Ethereum address that owns the Uniswap V3 LP positions
     pub owner: Address,
@@ -127,17 +124,24 @@ impl LPHMonitor {
             })?;
 
         // Determine which token is BASE and which is USDT
-        let (amm_base_amount_raw, amm_usdt_amount_raw) = if position_data.token0 == self.base_token_address {
-            (position_data.withdrawable_amount0, position_data.withdrawable_amount1)
-        } else {
-            (position_data.withdrawable_amount1, position_data.withdrawable_amount0)
-        };
+        let (amm_base_amount_raw, amm_usdt_amount_raw) =
+            if position_data.token0 == self.base_token_address {
+                (
+                    position_data.withdrawable_amount0,
+                    position_data.withdrawable_amount1,
+                )
+            } else {
+                (
+                    position_data.withdrawable_amount1,
+                    position_data.withdrawable_amount0,
+                )
+            };
 
         // Convert U256 amounts to f64 (assuming 18 decimals for BASE and 6 decimals for USDT)
         // Note: In production, you should fetch actual token decimals from the contract
         const BASE_DECIMALS: u32 = 18;
         const USDT_DECIMALS: u32 = 6;
-        
+
         let amm_base_amount = u256_to_f64(amm_base_amount_raw, BASE_DECIMALS);
         let amm_usdt_amount = u256_to_f64(amm_usdt_amount_raw, USDT_DECIMALS);
 
@@ -146,11 +150,16 @@ impl LPHMonitor {
 
         // Step 2: Read Binance Futures Position Data
         let positions = self.binance_client.get_position(&self.symbol).await?;
-        
+
         let binance_position = positions
             .iter()
             .find(|p| p.symbol == self.symbol)
-            .ok_or_else(|| anyhow!("No matching Binance position found for symbol={}", self.symbol))?;
+            .ok_or_else(|| {
+                anyhow!(
+                    "No matching Binance position found for symbol={}",
+                    self.symbol
+                )
+            })?;
 
         // Extract futures position (convert from string to f64, preserving sign)
         let futures_position = binance_position
@@ -175,15 +184,16 @@ impl LPHMonitor {
 
         // Step 3: Compute Monitoring Metrics
         let base_delta = amm_base_amount + futures_position;
-        
+
         // Compute base_reference with epsilon to avoid division by zero
         const EPSILON: f64 = 1e-8;
-        let base_reference = amm_base_amount.abs()
+        let base_reference = amm_base_amount
+            .abs()
             .max(futures_position.abs())
             .max(EPSILON);
-        
+
         let base_delta_ratio = base_delta / base_reference;
-        
+
         let amm_base_value_usdt = amm_base_amount * base_price_usdt;
         let amm_total_value_usdt = amm_base_value_usdt + amm_usdt_amount;
         let total_value_usdt = amm_total_value_usdt + futures_balance_usdt;
@@ -217,12 +227,12 @@ fn u256_to_f64(value: U256, decimals: u32) -> f64 {
     // Convert U256 to u128 (assuming it fits)
     // For values larger than u128::MAX, this will truncate, but that's acceptable for f64 precision
     let value_u128 = value.to::<u128>();
-    
+
     // Divide by 10^decimals to get the decimal representation
     let divisor = 10_u128.pow(decimals);
     let whole_part = value_u128 / divisor;
     let fractional_part = value_u128 % divisor;
-    
+
     // Combine whole and fractional parts
     // Use f64 arithmetic to preserve precision
     whole_part as f64 + (fractional_part as f64 / divisor as f64)
