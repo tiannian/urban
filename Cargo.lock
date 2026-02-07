@@ -1086,6 +1086,7 @@ dependencies = [
 name = "clients-binance"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "hex",
  "hmac",
  "reqwest",

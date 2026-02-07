@@ -5,58 +5,13 @@
 
 use alloy::primitives::{Address, U256};
 use anyhow::{anyhow, Result};
-use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use binance::BinancePerpsClient;
 use uniswapv3::UniswapV3PositionManager;
 
-/// Configuration for LPHMonitor
-pub struct LPHMonitorConfig {
-    /// Uniswap V3 client instance
-    pub uniswap_client: UniswapV3PositionManager,
-    /// Binance futures client instance
-    pub binance_client: BinancePerpsClient,
-    /// Ethereum address that owns the Uniswap V3 LP positions
-    pub owner: Address,
-    /// Binance futures symbol (e.g., "BTCUSDT")
-    pub symbol: String,
-    /// Ethereum address of the BASE token (e.g., BNB, ETH)
-    pub base_token_address: Address,
-    /// Ethereum address of the USDT token
-    pub usdt_token_address: Address,
-}
-
-/// Monitoring snapshot containing all computed metrics
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MonitoringSnapshot {
-    /// Current Unix timestamp in milliseconds
-    pub timestamp: i64,
-    /// Blockchain block number at which the on-chain LP position data was read
-    pub block_number: u64,
-    /// Futures symbol
-    pub symbol: String,
-    /// Amount of BASE tokens in LP position
-    pub amm_base_amount: f64,
-    /// Amount of USDT tokens in LP position
-    pub amm_usdt_amount: f64,
-    /// Net futures position in BASE units (positive = long, negative = short)
-    pub futures_position: f64,
-    /// USDT balance on futures account
-    pub futures_balance_usdt: f64,
-    /// Timestamp from Binance position data (in milliseconds since Unix epoch)
-    pub futures_timestamp: i64,
-    /// Current BASE price in USDT
-    pub base_price_usdt: f64,
-    /// Net BASE exposure (amm_base_amount + futures_position)
-    pub base_delta: f64,
-    /// Relative deviation ratio
-    pub base_delta_ratio: f64,
-    /// Total AMM position value in USDT
-    pub amm_total_value_usdt: f64,
-    /// Total combined value in USDT
-    pub total_value_usdt: f64,
-}
+use crate::config::LPHMonitorConfig;
+use crate::types::MonitoringSnapshot;
 
 /// LP Hedging Monitor
 ///
@@ -82,14 +37,20 @@ impl LPHMonitor {
     /// Creates a new `LPHMonitor` instance
     ///
     /// # Arguments
-    /// * `config` - A `LPHMonitorConfig` instance containing all configuration parameters and client instances
+    /// * `config` - A `LPHMonitorConfig` instance containing configuration parameters
+    /// * `uniswap_client` - Uniswap V3 client instance
+    /// * `binance_client` - Binance futures client instance
     ///
     /// # Returns
     /// A new `LPHMonitor` instance with both clients and configuration parameters configured
-    pub fn new(config: LPHMonitorConfig) -> Self {
+    pub fn new(
+        config: LPHMonitorConfig,
+        uniswap_client: UniswapV3PositionManager,
+        binance_client: BinancePerpsClient,
+    ) -> Self {
         Self {
-            uniswap_client: config.uniswap_client,
-            binance_client: config.binance_client,
+            uniswap_client,
+            binance_client,
             owner: config.owner,
             symbol: config.symbol,
             base_token_address: config.base_token_address,
@@ -101,7 +62,7 @@ impl LPHMonitor {
     ///
     /// # Returns
     /// A `MonitoringSnapshot` structure containing all monitoring metrics, or an error if data reading or computation fails
-    pub async fn status(&mut self) -> Result<MonitoringSnapshot, Box<dyn std::error::Error>> {
+    pub async fn status(&mut self) -> Result<MonitoringSnapshot> {
         // Step 1: Read AMM LP Position Data
         self.uniswap_client.sync_lp(self.owner).await?;
 

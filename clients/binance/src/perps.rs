@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use anyhow::Result;
+
 use crate::config::BinancePerpsClientConfig;
 use crate::types::Position;
 use crate::utils;
@@ -30,10 +32,7 @@ impl BinancePerpsClient {
         }
     }
 
-    pub async fn get_position(
-        &self,
-        pair: &str,
-    ) -> Result<Vec<Position>, Box<dyn std::error::Error>> {
+    pub async fn get_position(&self, pair: &str) -> Result<Vec<Position>> {
         let params: Vec<(&str, String)> = vec![
             ("symbol", pair.to_string()),
             ("timestamp", utils::binance_fapi_timestamp_ms()),
