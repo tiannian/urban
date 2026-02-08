@@ -218,6 +218,120 @@ The `get_position` function queries Binance's `/fapi/v3/positionRisk` endpoint t
 - Network errors, HTTP errors, or JSON deserialization errors are propagated as `Box<dyn std::error::Error>`.
 - The function does not handle API-level errors (e.g., invalid API key, rate limiting) explicitly; these are returned as errors from the HTTP client or JSON deserializer.
 
+### OrderResponse Structure
+
+The `OrderResponse` structure represents the JSON returned from Binance's POST `/fapi/v1/order` (New Order) endpoint. All fields are deserialized from the API response using serde.
+
+**Fields:**
+
+- `client_order_id`: String - User-defined or system-assigned order id.
+- `order_id`: i64 - System order id.
+- `symbol`: String - Trading pair (e.g. `BTCUSDT`).
+- `side`: String - Order side (`BUY`, `SELL`).
+- `position_side`: String - Position side (`BOTH`, `LONG`, `SHORT`).
+- `order_type`: String - Order type (e.g. `LIMIT`, `MARKET`, `TRAILING_STOP_MARKET`).
+- `orig_type`: String - Original order type before trigger (for conditional orders).
+- `status`: String - Order status (e.g. `NEW`, `FILLED`, `CANCELED`).
+- `orig_qty`: String - Original order quantity.
+- `executed_qty`: String - Executed quantity.
+- `cum_qty`: String - Cumulative filled quantity.
+- `cum_quote`: String - Cumulative filled quote amount.
+- `price`: String - Limit price.
+- `avg_price`: String - Average fill price.
+- `stop_price`: String - Trigger price (not used for `TRAILING_STOP_MARKET`).
+- `reduce_only`: bool - Whether the order is reduce-only.
+- `close_position`: bool - Whether the order closes the position (conditional).
+- `time_in_force`: String - Time in force (e.g. `GTC`, `IOC`, `GTD`).
+- `update_time`: i64 - Last update time in milliseconds.
+- `working_type`: String - Trigger price type (e.g. `CONTRACT_PRICE`).
+- `price_protect`: bool - Whether trigger protection is enabled.
+- `price_match`: String - Price match mode.
+- `self_trade_prevention_mode`: String - Self-trade prevention mode.
+- `good_till_date`: Option&lt;i64&gt; - Auto-cancel time when timeInForce is GTD.
+
+**JSON Field Mapping:**
+
+The structure uses `#[serde(rename = "...")]` to map camelCase JSON keys to snake_case Rust fields (e.g. `clientOrderId` → `client_order_id`, `orderId` → `order_id`, `origQty` → `orig_qty`, `executedQty` → `executed_qty`, `cumQuote` → `cum_quote`, `avgPrice` → `avg_price`, `stopPrice` → `stop_price`, `reduceOnly` → `reduce_only`, `closePosition` → `close_position`, `timeInForce` → `time_in_force`, `updateTime` → `update_time`, `workingType` → `working_type`, `priceProtect` → `price_protect`, `priceMatch` → `price_match`, `selfTradePreventionMode` → `self_trade_prevention_mode`, `goodTillDate` → `good_till_date`). The JSON field for order type is `type`; the Rust field may be named `order_type` with rename `"type"`, and `origType` → `orig_type`.
+
+### Side, PositionSide, and OrderType Enums
+
+**Side**
+
+Order side. Serializes to the API string `BUY` or `SELL`.
+
+- Variants: `Buy`, `Sell` (or equivalent; serialization to `"BUY"`, `"SELL"`).
+
+**PositionSide**
+
+Position side. One-way mode uses `Both`; hedge mode uses `Long` or `Short`. Serializes to the API string `BOTH`, `LONG`, or `SHORT`.
+
+- Variants: `Both`, `Long`, `Short`.
+
+**OrderType**
+
+Order type. Serializes to the API string accepted by POST `/fapi/v1/order`.
+
+- Variants (at least): `Limit`, `Market`. Other Binance types (e.g. `Stop`, `TakeProfit`, `StopMarket`, `TakeProfitMarket`, `TrailingStopMarket`) may be included as needed.
+- API values: `LIMIT`, `MARKET`, `STOP`, `TAKE_PROFIT`, `STOP_MARKET`, `TAKE_PROFIT_MARKET`, `TRAILING_STOP_MARKET`.
+
+These enums must derive `Serialize` and `Deserialize` (or equivalent) so that they serialize to the exact API strings above when building the request body.
+
+### PlaceOrderRequest Structure
+
+The `PlaceOrderRequest` structure holds exactly the following parameters for a single order. All fields are sent as form parameters to POST `/fapi/v1/order` (with `symbol` provided separately to `place_order`).
+
+**Fields:**
+
+- `side`: `Side` - Order side (Buy / Sell).
+- `position_side`: `PositionSide` - Position side (Both / Long / Short).
+- `order_type`: `OrderType` - Order type (e.g. Limit, Market).
+- `quantity`: String - Order quantity (decimal string as required by the API for the given order type).
+- `price`: Option&lt;String&gt; - Limit price (required for LIMIT orders; None for MARKET).
+- `reduce_only`: bool - If true, order is reduce-only.
+
+When building the request body, the implementation must convert each enum to its API string (e.g. `Side::Buy` → `"BUY"`, `PositionSide::Both` → `"BOTH"`, `OrderType::Limit` → `"LIMIT"`). For LIMIT orders, `timeInForce` is required by the API; the spec does not prescribe how it is chosen (e.g. default `GTC` in implementation).
+
+### place_order Function
+
+**Function Signature**
+
+```rust
+async fn place_order(
+    &self,
+    symbol: &str,
+    req: &PlaceOrderRequest,
+) -> Result<OrderResponse, Box<dyn std::error::Error>>
+```
+
+**Function Behavior**
+
+The `place_order` function submits a single order to Binance's POST `/fapi/v1/order` endpoint. The function performs the following steps:
+
+1. **Build Parameters**
+   - Build a parameter vector from `symbol` and `req`: `symbol` (from the argument), `side` (from `req.side` serialized to API string), `positionSide` (from `req.position_side`), `type` (from `req.order_type`), `quantity` (from `req.quantity`), `reduceOnly` (from `req.reduce_only`, as `"true"` or `"false"`). For LIMIT orders include `price` from `req.price` (unwrap or use the value) and a `timeInForce` value (e.g. default `GTC`; implementation-defined). Parameter keys use Binance's camelCase.
+
+2. **Send Signed Request**
+   - Call `fapi_signed_request(self.client, self.base_url, "/fapi/v1/order", "POST", self.api_key, self.api_secret, params)`. The helper adds `timestamp` and `recvWindow` and signs the body as application/x-www-form-urlencoded.
+
+3. **Parse Response**
+   - Deserialize the JSON response body into an `OrderResponse` structure.
+   - Return the result.
+
+**Parameters:**
+- `symbol`: The trading pair (e.g. `BTCUSDT`).
+- `req`: A reference to a `PlaceOrderRequest` containing `side`, `position_side`, `order_type`, `quantity`, `price`, and `reduce_only`.
+
+**Returns:** An `OrderResponse` instance with the order metadata and fill information returned by the API.
+
+**Error Handling**
+
+- Network errors, HTTP errors, or JSON deserialization errors are propagated as `Box<dyn std::error::Error>`.
+- API-level errors (e.g. invalid symbol, rate limit, insufficient margin) are returned as errors from the HTTP client or JSON deserializer.
+
+**Rate Limits**
+
+- 10s order count (X-MBX-ORDER-COUNT-10S): 1; 1min order count (X-MBX-ORDER-COUNT-1M): 1. The implementation does not add rate limiting; callers must respect these limits.
+
 ### Utility Functions
 
 #### binance_fapi_timestamp_ms
@@ -355,6 +469,21 @@ let orderbook = binance_client.get_orderbook("BTCUSDT", Some(10)).await?;
 // orderbook.last_update_id, orderbook.e, orderbook.t for metadata
 ```
 
+### Placing an Order
+
+```rust
+let req = PlaceOrderRequest {
+    side: Side::Buy,
+    position_side: PositionSide::Both,
+    order_type: OrderType::Limit,
+    quantity: "0.001".to_string(),
+    price: Some("50000".to_string()),
+    reduce_only: false,
+};
+let order_response = binance_client.place_order("BTCUSDT", &req).await?;
+// order_response.order_id, order_response.status, order_response.executed_qty, etc.
+```
+
 ### Using the Generic Signed Request Function
 
 ```rust
@@ -398,5 +527,6 @@ let response = fapi_signed_request(
 
 ## References
 
-- Binance Futures API documentation for endpoint details and parameter requirements.
+- [Binance USDT-Margined Futures – New Order (POST /fapi/v1/order)](https://developers.binance.com/docs/zh-CN/derivatives/usds-margined-futures/trade/rest-api) for request/response parameters, types, and rate limits.
+- Binance Futures API documentation for other endpoint details and parameter requirements.
 - Binance API authentication documentation for signature algorithm specifications.
