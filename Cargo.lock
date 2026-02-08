@@ -1097,6 +1097,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "clients-telegrambot"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "reqwest",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "clients-uniswapv3"
 version = "0.1.0"
 dependencies = [
@@ -2237,6 +2247,7 @@ dependencies = [
  "alloy",
  "anyhow",
  "clients-binance",
+ "clients-telegrambot",
  "clients-uniswapv3",
  "reqwest",
  "strategy-lph",

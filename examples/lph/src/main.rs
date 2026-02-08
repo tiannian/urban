@@ -1,6 +1,6 @@
-//! LPH example: run LPH monitor once and print the monitoring message (e.g. for Telegram).
+//! LPH example: run LPH monitor once and push the monitoring message via Telegram.
 //!
-//! Usage: lph <owner_address> <contract_address> <rpc_url> <binance_api_key> <binance_api_secret>
+//! Usage: lph <owner_address> <contract_address> <rpc_url> <binance_api_key> <binance_api_secret> <telegram_bot_key> <telegram_chat_id>
 //!
 //! Symbol and token addresses are fixed: BNBUSDC, WBNB, USDT (BSC).
 
@@ -8,6 +8,7 @@ use alloy::network::Ethereum;
 use alloy::primitives::Address;
 use alloy::providers::{Provider, RootProvider};
 use clients_binance::BinancePerpsClient;
+use clients_telegrambot::TelegramBot;
 use clients_uniswapv3::UniswapV3PositionManager;
 use lph::{LPHMonitor, LPHMonitorConfig};
 use std::str::FromStr;
@@ -20,9 +21,9 @@ const USDT_TOKEN_ADDRESS: &str = "0x55d398326f99059fF775485246999027B3197955";
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().collect();
-    if args.len() < 6 {
+    if args.len() < 8 {
         eprintln!(
-            "Usage: {} <owner_address> <contract_address> <rpc_url> <binance_api_key> <binance_api_secret>",
+            "Usage: {} <owner_address> <contract_address> <rpc_url> <binance_api_key> <binance_api_secret> <telegram_bot_key> <telegram_chat_id>",
             args.first().map(|s| s.as_str()).unwrap_or("lph")
         );
         std::process::exit(1);
@@ -33,6 +34,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let rpc_url = args[3].trim();
     let api_key = args[4].trim().to_string();
     let api_secret = args[5].trim().to_string();
+    let telegram_bot_key = args[6].trim().to_string();
+    let telegram_chat_id = args[7].trim().to_string();
     let symbol = SYMBOL.to_string();
     let base_token_address = Address::from_str(BASE_TOKEN_ADDRESS)?;
     let usdt_token_address = Address::from_str(USDT_TOKEN_ADDRESS)?;
@@ -60,7 +63,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     let mut monitor = LPHMonitor::new(config, uniswap_client, binance_client);
     let snapshot = monitor.status().await?;
-    println!("{}", snapshot.to_message("BNB"));
+    let message = snapshot.to_message("BNB");
+    let telegram = TelegramBot::new(telegram_bot_key, telegram_chat_id);
+    telegram.push_message(&message).await?;
 
     Ok(())
 }

@@ -11,6 +11,7 @@ path = "src/main.rs"
 alloy.workspace = true
 anyhow.workspace = true
 clients-binance.workspace = true
+clients-telegrambot.workspace = true
 clients-uniswapv3.workspace = true
 reqwest.workspace = true
 strategy-lph.workspace = true
