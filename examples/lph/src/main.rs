@@ -55,7 +55,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     let mut monitor = LPHMonitor::new(config, uniswap_client, binance_client);
     let snapshot = monitor.status().await?;
-    println!("{}", snapshot.to_message());
+    println!("{}", snapshot.to_message(&snapshot.symbol));
 
     Ok(())
 }

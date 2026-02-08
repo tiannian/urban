@@ -40,11 +40,12 @@ pub struct MonitoringSnapshot {
 impl MonitoringSnapshot {
     /// Builds a multi-line message string for pushing to Telegram or similar systems.
     /// Numeric values use 4 decimal places except base_delta_ratio which uses 2.
-    pub fn to_message(&self) -> String {
+    /// `symbol` is passed in from the caller for display in the message.
+    pub fn to_message(&self, symbol: &str) -> String {
         let base_usd = self.amm_base_amount * self.base_price_usdt;
         let line1 = format!(
             "当前base token为 {:.4} {}({:.4} USD)",
-            self.amm_base_amount, self.symbol, base_usd
+            self.amm_base_amount, symbol, base_usd
         );
         let line2 = format!(
             "当前base token对冲差异比为 {:.2}%",
