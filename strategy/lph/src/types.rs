@@ -49,8 +49,8 @@ impl MonitoringSnapshot {
         let line2 = format!("当前base token对冲差异比为 {:.2}", self.base_delta_ratio);
         let line3 = format!("目前系统总资产为：{:.4}", self.total_value_usdt);
         let line4 = format!(
-            "收益为 amm_collectable_value_usdt = {:.4} {} + {:.4} USD",
-            self.amm_collectable_base, self.symbol, self.amm_collectable_usdt
+            "收益为 amm_collectable_value_usdt = {:.4} USD",
+            self.amm_collectable_value_usdt
         );
         [line1, line2, line3, line4].join("\n")
     }
