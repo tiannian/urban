@@ -1,4 +1,4 @@
-//! LPH example: run LPH monitor once and push the monitoring message via Telegram.
+//! LPH example: run LPH monitor in a loop every 1 minute and push the monitoring message via Telegram.
 //!
 //! Usage: lph <owner_address> <contract_address> <rpc_url> <binance_api_key> <binance_api_secret> <telegram_bot_key> <telegram_chat_id>
 //!
@@ -13,6 +13,7 @@ use clients_uniswapv3::UniswapV3PositionManager;
 use lph::{LPHMonitor, LPHMonitorConfig};
 use std::str::FromStr;
 use std::sync::Arc;
+use tokio::time::Duration;
 
 const SYMBOL: &str = "BNBUSDC";
 const BASE_TOKEN_ADDRESS: &str = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
@@ -62,10 +63,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         usdt_token_address,
     };
     let mut monitor = LPHMonitor::new(config, uniswap_client, binance_client);
-    let snapshot = monitor.status().await?;
-    let message = snapshot.to_message("BNB");
     let telegram = TelegramBot::new(telegram_bot_key, telegram_chat_id);
-    telegram.push_message(&message).await?;
 
-    Ok(())
+    loop {
+        let snapshot = monitor.status().await?;
+        let message = snapshot.to_message("BNB");
+        telegram.push_message(&message).await?;
+        tokio::time::sleep(Duration::from_secs(60)).await;
+    }
 }
