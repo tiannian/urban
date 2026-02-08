@@ -1,7 +1,8 @@
 //! LPH example: run LPH monitor once and print the monitoring message (e.g. for Telegram).
 //!
-//! Usage: lph <owner_address> <contract_address> <rpc_url> <binance_api_key> <binance_api_secret> \
-//!          <symbol> <base_token_address> <usdt_token_address>
+//! Usage: lph <owner_address> <contract_address> <rpc_url> <binance_api_key> <binance_api_secret>
+//!
+//! Symbol and token addresses are fixed: BNBUSDC, WBNB, USDT (BSC).
 
 use alloy::network::Ethereum;
 use alloy::primitives::Address;
@@ -12,12 +13,16 @@ use lph::{LPHMonitor, LPHMonitorConfig};
 use std::str::FromStr;
 use std::sync::Arc;
 
+const SYMBOL: &str = "BNBUSDC";
+const BASE_TOKEN_ADDRESS: &str = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
+const USDT_TOKEN_ADDRESS: &str = "0x55d398326f99059fF775485246999027B3197955";
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().collect();
-    if args.len() < 9 {
+    if args.len() < 6 {
         eprintln!(
-            "Usage: {} <owner_address> <contract_address> <rpc_url> <binance_api_key> <binance_api_secret> <symbol> <base_token_address> <usdt_token_address>",
+            "Usage: {} <owner_address> <contract_address> <rpc_url> <binance_api_key> <binance_api_secret>",
             args.first().map(|s| s.as_str()).unwrap_or("lph")
         );
         std::process::exit(1);
@@ -28,9 +33,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let rpc_url = args[3].trim();
     let api_key = args[4].trim().to_string();
     let api_secret = args[5].trim().to_string();
-    let symbol = args[6].trim().to_string();
-    let base_token_address = Address::from_str(args[7].trim())?;
-    let usdt_token_address = Address::from_str(args[8].trim())?;
+    let symbol = SYMBOL.to_string();
+    let base_token_address = Address::from_str(BASE_TOKEN_ADDRESS)?;
+    let usdt_token_address = Address::from_str(USDT_TOKEN_ADDRESS)?;
 
     let client = reqwest::Client::builder().build()?;
     let client = Arc::new(client);
