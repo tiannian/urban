@@ -69,6 +69,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let snapshot = monitor.status().await?;
         let message = snapshot.to_message("BNB");
         telegram.push_message(&message).await?;
-        tokio::time::sleep(Duration::from_secs(60)).await;
+        tokio::time::sleep(Duration::from_secs(90)).await;
     }
 }
