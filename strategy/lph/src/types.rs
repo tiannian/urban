@@ -62,6 +62,6 @@ impl MonitoringSnapshot {
             collectable_base_usd,
             self.amm_collectable_usdt
         );
-        [line1, line2, line3, line4, line5].join("\n")
+        [line2, line1, line3, line4, line5].join("\n")
     }
 }
