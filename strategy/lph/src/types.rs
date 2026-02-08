@@ -42,19 +42,26 @@ impl MonitoringSnapshot {
     /// Numeric values use 4 decimal places except base_delta_ratio which uses 2.
     /// `symbol` is passed in from the caller for display in the message (line 1 and line 4).
     pub fn to_message(&self, symbol: &str) -> String {
+        let line1 = format!("{} 价格: {:.4} USDT", symbol, self.base_price_usdt);
+
         let base_usd = self.amm_base_amount * self.base_price_usdt;
-        let line1 = format!(
-            "当前base token为 {:.4} {}({:.4} USD)",
+        let line2 = format!(
+            "当前 AMM LP 为 {:.4} {}({:.4} USD)",
             self.amm_base_amount, symbol, base_usd
         );
-        let line2 = format!("{} 价格: {:.4} USDT", symbol, self.base_price_usdt);
-        let line3 = format!(
+        let line3 = format!("当前 Perps 头寸为 {:.4} {}", self.futures_position, symbol);
+        let line4 = format!(
+            "当前 AMM LP 和 Perps 头寸差异为 {:.4} {}",
+            self.base_delta, symbol
+        );
+        let line5 = format!(
             "当前base token对冲差异比为 {:.2}%",
             self.base_delta_ratio * 100.0
         );
-        let line4 = format!("目前系统总资产为：{:.4}", self.total_value_usdt);
+
+        let line6 = format!("目前系统总资产为：{:.4}", self.total_value_usdt);
         let collectable_base_usd = self.amm_collectable_base * self.base_price_usdt;
-        let line5 = format!(
+        let line7 = format!(
             "收益 {:.4} = {:.4} {} ({:.4} USD) + {:.4} USD",
             self.amm_collectable_value_usdt,
             self.amm_collectable_base,
@@ -62,6 +69,19 @@ impl MonitoringSnapshot {
             collectable_base_usd,
             self.amm_collectable_usdt
         );
-        [line2, line1, line3, line4, line5].join("\n")
+
+        [
+            line1,
+            "----".into(),
+            line2,
+            line3,
+            line4,
+            line5,
+            "----".into(),
+            line6,
+            "----".into(),
+            line7,
+        ]
+        .join("\n")
     }
 }
