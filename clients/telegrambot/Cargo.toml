@@ -1,0 +1,14 @@
+[package]
+name = "clients-telegrambot"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+name = "clients_telegrambot"
+path = "src/lib.rs"
+
+[dependencies]
+anyhow.workspace = true
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json.workspace = true
