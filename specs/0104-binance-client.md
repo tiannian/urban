@@ -104,6 +104,79 @@ The structure uses `#[serde(rename = "...")]` attributes to map camelCase JSON f
 - `askNotional` → `ask_notional`
 - `updateTime` → `update_time`
 
+### Orderbook Structure
+
+The `Orderbook` structure represents the order book (market depth) returned from Binance's `/fapi/v1/depth` endpoint. All fields are deserialized from JSON responses using serde.
+
+**Fields:**
+
+- `last_update_id`: i64 - Last update ID for the order book.
+- `e`: i64 - Event time in milliseconds.
+- `t`: i64 - Transaction time in milliseconds.
+- `bids`: Vec<[String; 2]> - Array of bid levels; each element is `[price, quantity]` as strings.
+- `asks`: Vec<[String; 2]> - Array of ask levels; each element is `[price, quantity]` as strings.
+
+**JSON Field Mapping:**
+
+The structure uses `#[serde(rename = "...")]` attributes to map JSON field names to Rust field names:
+- `lastUpdateId` → `last_update_id`
+- `E` → `e`
+- `T` → `t`
+
+**Example Response (JSON):**
+
+```json
+{
+  "lastUpdateId": 9861306016934,
+  "E": 1770548779357,
+  "T": 1770548779348,
+  "bids": [["641.600","0.01"],["641.590","0.16"],["641.580","0.85"]],
+  "asks": [["641.620","0.40"],["641.640","0.15"],["641.660","2.75"]]
+}
+```
+
+### get_orderbook Function
+
+**Function Signature**
+
+```rust
+async fn get_orderbook(
+    &self,
+    symbol: &str,
+    limit: Option<u16>,
+) -> Result<Orderbook, Box<dyn std::error::Error>>
+```
+
+**Function Behavior**
+
+The `get_orderbook` function queries Binance's `/fapi/v1/depth` endpoint to retrieve the order book (market depth) for a specific symbol. The endpoint is public and does not require request signing. The function performs the following steps:
+
+1. **Build Query Parameters**
+   - Add required parameter: `symbol` — the trading pair symbol (e.g., `BTCUSDT`).
+   - If `limit` is `Some(n)`, add query parameter `limit` with value `n`. Valid limits are 5, 10, 20, 50, 100, or 500; if not provided, the API uses its default.
+
+2. **Build Request URL**
+   - Construct the full URL: `{base_url}/fapi/v1/depth?symbol={symbol}[&limit={limit}]`.
+
+3. **Send HTTP Request**
+   - Make a GET request to the constructed URL.
+   - No API key or signature is required for this public endpoint.
+   - Await the response.
+
+4. **Parse Response**
+   - Deserialize the JSON response body into an `Orderbook` structure.
+   - Return the orderbook.
+
+**Parameters:**
+- `symbol`: The trading pair symbol (e.g., `BTCUSDT`).
+- `limit`: Optional. Number of depth levels to return (5, 10, 20, 50, 100, or 500). If `None`, the API default is used.
+
+**Returns:** An `Orderbook` instance containing `last_update_id`, `e`, `t`, `bids`, and `asks`.
+
+**Error Handling**
+
+- Network errors, HTTP errors, or JSON deserialization errors are propagated as `Box<dyn std::error::Error>`.
+
 ### get_position Function
 
 **Function Signature**
@@ -272,6 +345,14 @@ let positions = binance_client.get_position("BTCUSDT").await?;
 for position in positions {
     // Access position fields: symbol, position_amt, entry_price, etc.
 }
+```
+
+### Querying Order Book
+
+```rust
+let orderbook = binance_client.get_orderbook("BTCUSDT", Some(10)).await?;
+// orderbook.bids and orderbook.asks are Vec<[String; 2]> (price, quantity)
+// orderbook.last_update_id, orderbook.e, orderbook.t for metadata
 ```
 
 ### Using the Generic Signed Request Function
