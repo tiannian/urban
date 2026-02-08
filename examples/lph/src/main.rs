@@ -1,7 +1,7 @@
 //! LPH example: run LPH monitor once and print the monitoring message (e.g. for Telegram).
 //!
 //! Usage: lph <owner_address> <contract_address> <rpc_url> <binance_api_key> <binance_api_secret> \
-//!          <symbol> <base_token_address> <usdt_token_address>
+//!          <symbol> <base_token> <base_token_address> <usdt_token_address>
 
 use alloy::network::Ethereum;
 use alloy::primitives::Address;
@@ -15,9 +15,9 @@ use std::sync::Arc;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().collect();
-    if args.len() < 9 {
+    if args.len() < 10 {
         eprintln!(
-            "Usage: {} <owner_address> <contract_address> <rpc_url> <binance_api_key> <binance_api_secret> <symbol> <base_token_address> <usdt_token_address>",
+            "Usage: {} <owner_address> <contract_address> <rpc_url> <binance_api_key> <binance_api_secret> <symbol> <base_token> <base_token_address> <usdt_token_address>",
             args.first().map(|s| s.as_str()).unwrap_or("lph")
         );
         std::process::exit(1);
@@ -29,8 +29,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let api_key = args[4].trim().to_string();
     let api_secret = args[5].trim().to_string();
     let symbol = args[6].trim().to_string();
-    let base_token_address = Address::from_str(args[7].trim())?;
-    let usdt_token_address = Address::from_str(args[8].trim())?;
+    let base_token = args[7].trim();
+    let base_token_address = Address::from_str(args[8].trim())?;
+    let usdt_token_address = Address::from_str(args[9].trim())?;
 
     let client = reqwest::Client::builder().build()?;
     let client = Arc::new(client);
@@ -55,7 +56,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     let mut monitor = LPHMonitor::new(config, uniswap_client, binance_client);
     let snapshot = monitor.status().await?;
-    println!("{}", snapshot.to_message(&snapshot.symbol));
+    println!("{}", snapshot.to_message(&snapshot.symbol, base_token));
 
     Ok(())
 }
