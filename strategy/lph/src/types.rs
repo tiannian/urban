@@ -46,23 +46,24 @@ impl MonitoringSnapshot {
 
         let base_usd = self.amm_base_amount * self.base_price_usdt;
         let line2 = format!(
-            "当前 AMM LP 为 {:.4} {}({:.4} USD)",
-            self.amm_base_amount, symbol, base_usd
+            "AMM LP 为 {:.4} {}({:.4} USD), {:.4} USD",
+            self.amm_base_amount, symbol, base_usd, self.amm_usdt_amount
         );
         let line3 = format!("当前 Perps 头寸为 {:.4} {}", self.futures_position, symbol);
         let line4 = format!(
-            "当前 AMM LP 和 Perps 头寸差异为 {:.4} {}",
+            "AMM LP 和 Perps 头寸差异为 {:.4} {}",
             self.base_delta, symbol
         );
         let line5 = format!(
-            "当前base token对冲差异比为 {:.2}%",
+            "base token对冲差异比为 {:.2}%",
             self.base_delta_ratio * 100.0
         );
 
         let line6 = format!("目前系统总资产为：{:.4}", self.total_value_usdt);
+
         let collectable_base_usd = self.amm_collectable_base * self.base_price_usdt;
         let line7 = format!(
-            "收益 {:.4} = {:.4} {} ({:.4} USD) + {:.4} USD",
+            "收益 {:.4} = {:.4} {} ({:.8} USD) + {:.8} USD",
             self.amm_collectable_value_usdt,
             self.amm_collectable_base,
             symbol,
