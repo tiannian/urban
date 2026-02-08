@@ -47,13 +47,14 @@ impl MonitoringSnapshot {
             "当前base token为 {:.4} {}({:.4} USD)",
             self.amm_base_amount, symbol, base_usd
         );
-        let line2 = format!(
+        let line2 = format!("{} 价格: {:.4} USDT", symbol, self.base_price_usdt);
+        let line3 = format!(
             "当前base token对冲差异比为 {:.2}%",
             self.base_delta_ratio * 100.0
         );
-        let line3 = format!("目前系统总资产为：{:.4}", self.total_value_usdt);
+        let line4 = format!("目前系统总资产为：{:.4}", self.total_value_usdt);
         let collectable_base_usd = self.amm_collectable_base * self.base_price_usdt;
-        let line4 = format!(
+        let line5 = format!(
             "收益 {:.4} = {:.4} {} ({:.4} USD) + {:.4} USD",
             self.amm_collectable_value_usdt,
             self.amm_collectable_base,
@@ -61,6 +62,6 @@ impl MonitoringSnapshot {
             collectable_base_usd,
             self.amm_collectable_usdt
         );
-        [line1, line2, line3, line4].join("\n")
+        [line1, line2, line3, line4, line5].join("\n")
     }
 }
