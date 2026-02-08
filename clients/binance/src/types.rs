@@ -41,3 +41,16 @@ pub struct Position {
     #[serde(rename = "updateTime")]
     pub update_time: i64,
 }
+
+/// Order book (market depth) from Binance perpetual futures API.
+#[derive(Debug, Clone, Deserialize)]
+pub struct Orderbook {
+    #[serde(rename = "lastUpdateId")]
+    pub last_update_id: i64,
+    #[serde(rename = "E")]
+    pub e: i64,
+    #[serde(rename = "T")]
+    pub t: i64,
+    pub bids: Vec<[String; 2]>,
+    pub asks: Vec<[String; 2]>,
+}

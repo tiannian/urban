@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::Result;
 
 use crate::config::BinancePerpsClientConfig;
-use crate::types::Position;
+use crate::types::{Orderbook, Position};
 use crate::utils;
 
 /// Client for Binance perpetual futures (USDT-M) API.
@@ -46,6 +46,29 @@ impl BinancePerpsClient {
             .send()
             .await?
             .json::<Vec<Position>>()
+            .await?;
+        Ok(resp)
+    }
+
+    /// Fetches the order book (market depth) for the given symbol.
+    ///
+    /// Calls GET `/fapi/v1/depth`. This is a public endpoint; no API key or signature is required.
+    ///
+    /// # Arguments
+    /// * `symbol` - Trading pair symbol (e.g. `BTCUSDT`)
+    /// * `limit` - Optional number of depth levels (5, 10, 20, 50, 100, or 500)
+    pub async fn get_orderbook(&self, symbol: &str, limit: Option<u16>) -> Result<Orderbook> {
+        let mut query = format!("symbol={}", symbol);
+        if let Some(n) = limit {
+            query.push_str(&format!("&limit={}", n));
+        }
+        let url = format!("{}/fapi/v1/depth?{}", self.base_url, query);
+        let resp = self
+            .client
+            .get(&url)
+            .send()
+            .await?
+            .json::<Orderbook>()
             .await?;
         Ok(resp)
     }

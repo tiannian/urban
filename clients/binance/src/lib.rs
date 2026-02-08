@@ -5,5 +5,5 @@ mod utils;
 
 pub use config::BinancePerpsClientConfig;
 pub use perps::BinancePerpsClient;
-pub use types::Position;
+pub use types::{Orderbook, Position};
 pub use utils::fapi_signed_request;
