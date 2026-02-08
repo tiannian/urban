@@ -46,7 +46,10 @@ impl MonitoringSnapshot {
             "当前base token为 {:.4} {}({:.4} USD)",
             self.amm_base_amount, self.symbol, base_usd
         );
-        let line2 = format!("当前base token对冲差异比为 {:.2}", self.base_delta_ratio);
+        let line2 = format!(
+            "当前base token对冲差异比为 {:.2}%",
+            self.base_delta_ratio * 100.0
+        );
         let line3 = format!("目前系统总资产为：{:.4}", self.total_value_usdt);
         let collectable_base_usd = self.amm_collectable_base * self.base_price_usdt;
         let line4 = format!(
