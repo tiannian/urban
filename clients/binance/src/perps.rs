@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::Result;
 
 use crate::config::BinancePerpsClientConfig;
-use crate::types::{Orderbook, Position};
+use crate::types::{OrderResponse, OrderType, Orderbook, PlaceOrderRequest, Position};
 use crate::utils;
 
 /// Client for Binance perpetual futures (USDT-M) API.
@@ -71,5 +71,43 @@ impl BinancePerpsClient {
             .json::<Orderbook>()
             .await?;
         Ok(resp)
+    }
+
+    /// Submits a single order to Binance POST `/fapi/v1/order`.
+    pub async fn place_order(
+        &self,
+        symbol: &str,
+        req: &PlaceOrderRequest,
+    ) -> Result<OrderResponse> {
+        let mut params: Vec<(&str, String)> = vec![
+            ("symbol", symbol.to_string()),
+            ("side", req.side.as_api_str().to_string()),
+            ("positionSide", req.position_side.as_api_str().to_string()),
+            ("type", req.order_type.as_api_str().to_string()),
+            ("quantity", req.quantity.clone()),
+            ("reduceOnly", req.reduce_only.to_string()),
+            ("timestamp", utils::binance_fapi_timestamp_ms()),
+        ];
+        if req.order_type == OrderType::Limit {
+            if let Some(ref price) = req.price {
+                params.push(("price", price.clone()));
+            }
+        }
+        let signed_query = utils::sign_params(&self.api_secret, &params);
+        let url = format!("{}/fapi/v1/order", self.base_url);
+        let order_response = self
+            .client
+            .post(&url)
+            .header("X-MBX-APIKEY", &self.api_key)
+            .header(
+                reqwest::header::CONTENT_TYPE,
+                "application/x-www-form-urlencoded",
+            )
+            .body(signed_query)
+            .send()
+            .await?
+            .json::<OrderResponse>()
+            .await?;
+        Ok(order_response)
     }
 }
