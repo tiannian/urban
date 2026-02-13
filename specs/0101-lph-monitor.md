@@ -52,11 +52,11 @@
 
 ## Detailed Specifications
 
-### LPHMonitor Structure
+### LPHStrategy Structure
 
-The `LPHMonitor` type is the main monitoring structure that aggregates data from both the on-chain AMM position and the CEX futures account. It contains two client instances for reading data from their respective sources.
+The `LPHStrategy` type is the main monitoring structure that aggregates data from both the on-chain AMM position and the CEX futures account. It contains two client instances for reading data from their respective sources.
 
-The `LPHMonitor` type contains:
+The `LPHStrategy` type contains:
 
 - `uniswap_client`: An instance of `UniswapV3PositionManager` (as defined in `0103-uniswapv3-client.md`) used to read LP position data from Uniswap V3.
 - `binance_client`: An instance of `BinancePerpsClient` (as defined in `0104-binance-client.md`) used to read futures position data from Binance.
@@ -84,10 +84,10 @@ The `LPHMonitorConfig` structure must derive `serde::Serialize` and `serde::Dese
 fn new(config: LPHMonitorConfig) -> Self
 ```
 
-- Creates a new `LPHMonitor` instance.
+- Creates a new `LPHStrategy` instance.
 - **Parameters:**
   - `config`: A `LPHMonitorConfig` instance containing all configuration parameters and client instances.
-- **Returns:** A new `LPHMonitor` instance with both clients and configuration parameters configured.
+- **Returns:** A new `LPHStrategy` instance with both clients and configuration parameters configured.
 
 ### status Function
 
@@ -99,7 +99,7 @@ async fn status(&mut self) -> Result<MonitoringSnapshot, Box<dyn std::error::Err
 
 **Function Behavior**
 
-The `status` function performs a complete monitoring cycle by reading data from both clients and computing the monitoring metrics. The function uses the configuration parameters stored in the `LPHMonitor` structure (`owner`, `symbol`, `base_token_address`, `usdt_token_address`). The function performs the following steps:
+The `status` function performs a complete monitoring cycle by reading data from both clients and computing the monitoring metrics. The function uses the configuration parameters stored in the `LPHStrategy` structure (`owner`, `symbol`, `base_token_address`, `usdt_token_address`). The function performs the following steps:
 
 1. **Read AMM LP Position Data**
    - Call `self.uniswap_client.sync_lp(self.owner).await?` to synchronize the Uniswap V3 position data.
