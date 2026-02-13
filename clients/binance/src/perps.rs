@@ -112,12 +112,14 @@ impl BinancePerpsClient {
 
     /// Places a limit sell at best ask (asks0) to open a short position.
     pub async fn open_sell(&self, symbol: &str, amount: &str) -> Result<OrderResponse> {
+        tracing::info!(symbol, amount, "open_sell: fetching orderbook");
         let orderbook = self.get_orderbook(symbol, Some(5)).await?;
         let ask = orderbook
             .asks
             .first()
             .ok_or_else(|| anyhow::anyhow!("orderbook asks empty"))?;
         let price = ask[0].clone();
+        tracing::info!(symbol, amount, price = %price, "open_sell: placing limit sell at best ask");
         let req = PlaceOrderRequest {
             side: Side::Sell,
             order_type: OrderType::Limit,
@@ -125,17 +127,21 @@ impl BinancePerpsClient {
             price: Some(price),
             reduce_only: false,
         };
-        self.place_order(symbol, &req).await
+        let resp = self.place_order(symbol, &req).await?;
+        tracing::info!(symbol, order_id = resp.order_id, "open_sell: order placed");
+        Ok(resp)
     }
 
     /// Places a limit buy at best bid (bids0), reduce-only, to close a short position.
     pub async fn close_sell(&self, symbol: &str, amount: &str) -> Result<OrderResponse> {
+        tracing::info!(symbol, amount, "close_sell: fetching orderbook");
         let orderbook = self.get_orderbook(symbol, Some(5)).await?;
         let bid = orderbook
             .bids
             .first()
             .ok_or_else(|| anyhow::anyhow!("orderbook bids empty"))?;
         let price = bid[0].clone();
+        tracing::info!(symbol, amount, price = %price, "close_sell: placing limit buy at best bid (reduce-only)");
         let req = PlaceOrderRequest {
             side: Side::Buy,
             order_type: OrderType::Limit,
@@ -143,6 +149,8 @@ impl BinancePerpsClient {
             price: Some(price),
             reduce_only: true,
         };
-        self.place_order(symbol, &req).await
+        let resp = self.place_order(symbol, &req).await?;
+        tracing::info!(symbol, order_id = resp.order_id, "close_sell: order placed");
+        Ok(resp)
     }
 }
