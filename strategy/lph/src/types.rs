@@ -42,47 +42,32 @@ impl MonitoringSnapshot {
     /// Numeric values use 4 decimal places except base_delta_ratio which uses 2.
     /// `symbol` is passed in from the caller for display in the message (line 1 and line 4).
     pub fn to_message(&self, symbol: &str) -> String {
-        let line1 = format!("{} 价格: {:.4} USDT", symbol, self.base_price_usdt);
+        let line1 = format!("{} Price: {:.2}", symbol, self.base_price_usdt);
 
-        let base_usd = self.amm_base_amount * self.base_price_usdt;
         let line2 = format!(
-            "AMM LP 为 {:.4} {}({:.4} USD), {:.4} USD",
-            self.amm_base_amount, symbol, base_usd, self.amm_usdt_amount
+            "Net Value: {:.4} USD = {:.4} {} + {:.4} USD + {:.4} USD",
+            self.total_value_usdt,
+            self.amm_base_amount,
+            symbol,
+            self.amm_usdt_amount,
+            self.unrealized_pnl
         );
-        let line3 = format!("当前 Perps 头寸为 {:.4} {}", self.futures_position, symbol);
-        let line4 = format!(
-            "AMM LP 和 Perps 头寸差异为 {:.4} {}",
-            self.base_delta, symbol
-        );
-        let line5 = format!(
-            "base token对冲差异比为 {:.2}%",
+
+        let line3 = format!(
+            "Delta: {:.4} {} ({:.2}%)",
+            self.base_delta,
+            symbol,
             self.base_delta_ratio * 100.0
         );
 
-        let line6 = format!("目前系统总资产为：{:.4}", self.total_value_usdt);
-
-        let collectable_base_usd = self.amm_collectable_base * self.base_price_usdt;
-        let line7 = format!(
-            "收益 {:.4} = {:.4} {} ({:.8} USD) + {:.8} USD",
+        let line4 = format!(
+            "Reward: {:.4} USD = {:.4} {} + {:.4} USD",
             self.amm_collectable_value_usdt,
             self.amm_collectable_base,
             symbol,
-            collectable_base_usd,
             self.amm_collectable_usdt
         );
 
-        [
-            line1,
-            "----".into(),
-            line2,
-            line3,
-            line4,
-            line5,
-            "----".into(),
-            line6,
-            "----".into(),
-            line7,
-        ]
-        .join("\n")
+        [line1, line2, line3, line4].join("\n")
     }
 }
