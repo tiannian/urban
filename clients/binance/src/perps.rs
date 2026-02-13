@@ -3,7 +3,9 @@ use std::sync::Arc;
 use anyhow::Result;
 
 use crate::config::BinancePerpsClientConfig;
-use crate::types::{OrderResponse, OrderType, Orderbook, PlaceOrderRequest, Position};
+use crate::types::{
+    OrderResponse, OrderType, Orderbook, PlaceOrderRequest, Position, PositionSide, Side,
+};
 use crate::utils;
 
 /// Client for Binance perpetual futures (USDT-M) API.
@@ -109,5 +111,43 @@ impl BinancePerpsClient {
             .json::<OrderResponse>()
             .await?;
         Ok(order_response)
+    }
+
+    /// Places a limit sell at best ask (asks0) to open a short position.
+    pub async fn open_sell(&self, symbol: &str, amount: &str) -> Result<OrderResponse> {
+        let orderbook = self.get_orderbook(symbol, Some(5)).await?;
+        let ask = orderbook
+            .asks
+            .first()
+            .ok_or_else(|| anyhow::anyhow!("orderbook asks empty"))?;
+        let price = ask[0].clone();
+        let req = PlaceOrderRequest {
+            side: Side::Sell,
+            position_side: PositionSide::Both,
+            order_type: OrderType::Limit,
+            quantity: amount.to_string(),
+            price: Some(price),
+            reduce_only: false,
+        };
+        self.place_order(symbol, &req).await
+    }
+
+    /// Places a limit sell at best bid (bids0), reduce-only, to close a short position.
+    pub async fn close_sell(&self, symbol: &str, amount: &str) -> Result<OrderResponse> {
+        let orderbook = self.get_orderbook(symbol, Some(5)).await?;
+        let bid = orderbook
+            .bids
+            .first()
+            .ok_or_else(|| anyhow::anyhow!("orderbook bids empty"))?;
+        let price = bid[0].clone();
+        let req = PlaceOrderRequest {
+            side: Side::Sell,
+            position_side: PositionSide::Both,
+            order_type: OrderType::Limit,
+            quantity: amount.to_string(),
+            price: Some(price),
+            reduce_only: true,
+        };
+        self.place_order(symbol, &req).await
     }
 }
