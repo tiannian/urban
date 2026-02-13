@@ -4,9 +4,9 @@
 //! with on-chain AMM positions.
 
 pub mod config;
-mod monitor;
+mod lph;
 mod types;
 
 pub use config::LPHMonitorConfig;
-pub use monitor::LPHMonitor;
+pub use lph::LPHStrategy;
 pub use types::MonitoringSnapshot;

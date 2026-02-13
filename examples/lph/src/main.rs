@@ -10,7 +10,7 @@ use alloy::providers::{Provider, RootProvider};
 use clients_binance::BinancePerpsClient;
 use clients_telegrambot::TelegramBot;
 use clients_uniswapv3::UniswapV3PositionManager;
-use lph::{LPHMonitor, LPHMonitorConfig};
+use lph::{LPHMonitorConfig, LPHStrategy};
 use std::str::FromStr;
 use std::sync::Arc;
 use tokio::time::Duration;
@@ -62,7 +62,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         base_token_address,
         usdt_token_address,
     };
-    let mut monitor = LPHMonitor::new(config, uniswap_client, binance_client);
+    let mut monitor = LPHStrategy::new(config, uniswap_client, binance_client);
     let telegram = TelegramBot::new(telegram_bot_key, telegram_chat_id);
 
     loop {

@@ -17,7 +17,7 @@ use crate::types::MonitoringSnapshot;
 /// Monitors the overall account state for an LP hedging setup that combines:
 /// - A centralized exchange (CEX) futures account
 /// - An on-chain AMM position
-pub struct LPHMonitor {
+pub struct LPHStrategy {
     /// Uniswap V3 client instance
     uniswap_client: UniswapV3PositionManager,
     /// Binance futures client instance
@@ -32,8 +32,8 @@ pub struct LPHMonitor {
     usdt_token_address: Address,
 }
 
-impl LPHMonitor {
-    /// Creates a new `LPHMonitor` instance
+impl LPHStrategy {
+    /// Creates a new `LPHStrategy` instance
     ///
     /// # Arguments
     /// * `config` - A `LPHMonitorConfig` instance containing configuration parameters
@@ -41,7 +41,7 @@ impl LPHMonitor {
     /// * `binance_client` - Binance futures client instance
     ///
     /// # Returns
-    /// A new `LPHMonitor` instance with both clients and configuration parameters configured
+    /// A new `LPHStrategy` instance with both clients and configuration parameters configured
     pub fn new(
         config: LPHMonitorConfig,
         uniswap_client: UniswapV3PositionManager,
