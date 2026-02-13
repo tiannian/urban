@@ -332,6 +332,78 @@ The `place_order` function submits a single order to Binance's POST `/fapi/v1/or
 
 - 10s order count (X-MBX-ORDER-COUNT-10S): 1; 1min order count (X-MBX-ORDER-COUNT-1M): 1. The implementation does not add rate limiting; callers must respect these limits.
 
+### open_sell Function
+
+**Function Signature**
+
+```rust
+async fn open_sell(
+    &self,
+    symbol: &str,
+    amount: &str,
+) -> Result<OrderResponse, Box<dyn std::error::Error>>
+```
+
+**Function Behavior**
+
+The `open_sell` function places a limit sell order to open a short position at the current best ask (asks0). The function performs the following steps:
+
+1. **Read Orderbook**
+   - Call `get_orderbook(self, symbol, limit)` (e.g. `limit = Some(5)` or implementation-defined) to obtain the current orderbook.
+
+2. **Obtain Price**
+   - Take the first ask level: `asks[0]` from the orderbook. The price to use is `asks[0][0]` (the best ask price).
+
+3. **Place Order**
+   - Build a `PlaceOrderRequest` with: `side = Side::Sell`, `position_side` as per client/contract mode (e.g. `PositionSide::Both` or `Short`), `order_type = OrderType::Limit`, `quantity = amount`, `price = Some(asks[0][0].clone())`, `reduce_only = false`.
+   - Call `place_order(self, symbol, &req)` and return its result.
+
+**Parameters:**
+- `symbol`: The trading pair (e.g. `BTCUSDT`).
+- `amount`: Order quantity (decimal string).
+
+**Returns:** The `OrderResponse` from the underlying `place_order` call.
+
+**Error Handling**
+
+- Propagates errors from `get_orderbook` (e.g. empty asks) and `place_order` as `Box<dyn std::error::Error>`.
+
+### close_sell Function
+
+**Function Signature**
+
+```rust
+async fn close_sell(
+    &self,
+    symbol: &str,
+    amount: &str,
+) -> Result<OrderResponse, Box<dyn std::error::Error>>
+```
+
+**Function Behavior**
+
+The `close_sell` function places a limit sell order to close an existing short position at the current best bid (bids0). The function performs the following steps:
+
+1. **Read Orderbook**
+   - Call `get_orderbook(self, symbol, limit)` (e.g. `limit = Some(5)` or implementation-defined) to obtain the current orderbook.
+
+2. **Obtain Price**
+   - Take the first bid level: `bids[0]` from the orderbook. The price to use is `bids[0][0]` (the best bid price).
+
+3. **Place Order**
+   - Build a `PlaceOrderRequest` with: `side = Side::Sell`, `position_side` as per client/contract mode (e.g. `PositionSide::Both` or `Short`), `order_type = OrderType::Limit`, `quantity = amount`, `price = Some(bids[0][0].clone())`, `reduce_only = true`.
+   - Call `place_order(self, symbol, &req)` and return its result.
+
+**Parameters:**
+- `symbol`: The trading pair (e.g. `BTCUSDT`).
+- `amount`: Order quantity (decimal string) to close.
+
+**Returns:** The `OrderResponse` from the underlying `place_order` call.
+
+**Error Handling**
+
+- Propagates errors from `get_orderbook` (e.g. empty bids) and `place_order` as `Box<dyn std::error::Error>`.
+
 ### Utility Functions
 
 #### binance_fapi_timestamp_ms
@@ -482,6 +554,16 @@ let req = PlaceOrderRequest {
 };
 let order_response = binance_client.place_order("BTCUSDT", &req).await?;
 // order_response.order_id, order_response.status, order_response.executed_qty, etc.
+```
+
+### Open Sell and Close Sell
+
+```rust
+// Open a short: limit sell at best ask (asks0), quantity = amount
+let open_resp = binance_client.open_sell("BTCUSDT", "0.001").await?;
+
+// Close a short: limit sell at best bid (bids0), reduce_only, quantity = amount
+let close_resp = binance_client.close_sell("BTCUSDT", "0.001").await?;
 ```
 
 ### Using the Generic Signed Request Function
