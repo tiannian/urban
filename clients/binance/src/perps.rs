@@ -128,7 +128,7 @@ impl BinancePerpsClient {
         self.place_order(symbol, &req).await
     }
 
-    /// Places a limit sell at best bid (bids0), reduce-only, to close a short position.
+    /// Places a limit buy at best bid (bids0), reduce-only, to close a short position.
     pub async fn close_sell(&self, symbol: &str, amount: &str) -> Result<OrderResponse> {
         let orderbook = self.get_orderbook(symbol, Some(5)).await?;
         let bid = orderbook
@@ -137,7 +137,7 @@ impl BinancePerpsClient {
             .ok_or_else(|| anyhow::anyhow!("orderbook bids empty"))?;
         let price = bid[0].clone();
         let req = PlaceOrderRequest {
-            side: Side::Sell,
+            side: Side::Buy,
             order_type: OrderType::Limit,
             quantity: amount.to_string(),
             price: Some(price),
