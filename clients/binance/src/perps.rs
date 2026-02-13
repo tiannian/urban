@@ -3,9 +3,7 @@ use std::sync::Arc;
 use anyhow::Result;
 
 use crate::config::BinancePerpsClientConfig;
-use crate::types::{
-    OrderResponse, OrderType, Orderbook, PlaceOrderRequest, Position, PositionSide, Side,
-};
+use crate::types::{OrderResponse, OrderType, Orderbook, PlaceOrderRequest, Position, Side};
 use crate::utils;
 
 /// Client for Binance perpetual futures (USDT-M) API.
@@ -84,7 +82,6 @@ impl BinancePerpsClient {
         let mut params: Vec<(&str, String)> = vec![
             ("symbol", symbol.to_string()),
             ("side", req.side.as_api_str().to_string()),
-            ("positionSide", req.position_side.as_api_str().to_string()),
             ("type", req.order_type.as_api_str().to_string()),
             ("quantity", req.quantity.clone()),
             ("reduceOnly", req.reduce_only.to_string()),
@@ -123,7 +120,6 @@ impl BinancePerpsClient {
         let price = ask[0].clone();
         let req = PlaceOrderRequest {
             side: Side::Sell,
-            position_side: PositionSide::Both,
             order_type: OrderType::Limit,
             quantity: amount.to_string(),
             price: Some(price),
@@ -142,7 +138,6 @@ impl BinancePerpsClient {
         let price = bid[0].clone();
         let req = PlaceOrderRequest {
             side: Side::Sell,
-            position_side: PositionSide::Both,
             order_type: OrderType::Limit,
             quantity: amount.to_string(),
             price: Some(price),
