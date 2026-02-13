@@ -12,4 +12,8 @@ pub struct LPHStrategyConfig {
     pub base_token_address: Address,
     /// Ethereum address of the USDT token
     pub usdt_token_address: Address,
+    /// Threshold for base_delta_ratio (n): execute only when base_delta_ratio > n
+    pub base_delta_ratio_threshold: f64,
+    /// Threshold for base_delta magnitude (m): execute only when |base_delta| > m; also used as quantity step for rounding
+    pub base_delta_threshold: f64,
 }

@@ -30,6 +30,10 @@ pub struct LPHStrategy {
     base_token_address: Address,
     /// Ethereum address of the USDT token
     usdt_token_address: Address,
+    /// Threshold for base_delta_ratio (n)
+    base_delta_ratio_threshold: f64,
+    /// Threshold for |base_delta| (m) and quantity step
+    base_delta_threshold: f64,
 }
 
 impl LPHStrategy {
@@ -54,7 +58,47 @@ impl LPHStrategy {
             symbol: config.symbol,
             base_token_address: config.base_token_address,
             usdt_token_address: config.usdt_token_address,
+            base_delta_ratio_threshold: config.base_delta_ratio_threshold,
+            base_delta_threshold: config.base_delta_threshold,
         }
+    }
+
+    /// Executes the LPH strategy: when base_delta_ratio > n and |base_delta| > m,
+    /// computes quantity from base_delta (absolute value rounded to step m) and
+    /// calls open_sell (if base_delta > 0) or close_sell (if base_delta < 0).
+    ///
+    /// # Arguments
+    /// * `base_delta_ratio` - Ratio used in the trigger condition
+    /// * `base_delta` - Delta used in the trigger and as the source value for order quantity
+    ///
+    /// # Returns
+    /// Ok(()) when no order is placed or when the order is placed successfully; Err on client failure.
+    pub async fn execute(&mut self, base_delta_ratio: f64, base_delta: f64) -> Result<()> {
+        let n = self.base_delta_ratio_threshold;
+        let m = self.base_delta_threshold;
+
+        if base_delta_ratio <= n || base_delta.abs() <= m {
+            return Ok(());
+        }
+
+        let value = base_delta;
+        if value == 0.0 {
+            return Ok(());
+        }
+
+        let quantity = round_to_step(value.abs(), m);
+        let quantity_str = format_quantity(quantity, m);
+
+        if value > 0.0 {
+            self.binance_client
+                .open_sell(&self.symbol, &quantity_str)
+                .await?;
+        } else {
+            self.binance_client
+                .close_sell(&self.symbol, &quantity_str)
+                .await?;
+        }
+        Ok(())
     }
 
     /// Performs a complete monitoring cycle by reading data from both clients and computing monitoring metrics
@@ -191,6 +235,24 @@ impl LPHStrategy {
             total_value_usdt,
         })
     }
+}
+
+/// Rounds a value to the nearest multiple of step (precision m per spec).
+fn round_to_step(value: f64, step: f64) -> f64 {
+    if step <= 0.0 {
+        return value;
+    }
+    (value / step).round() * step
+}
+
+/// Formats a quantity with decimal places derived from step m.
+fn format_quantity(quantity: f64, step: f64) -> String {
+    let prec = if step >= 1.0 {
+        0
+    } else {
+        (1.0_f64 / step).log10().ceil().max(0.0) as u32
+    };
+    format!("{:.prec$}", quantity, prec = prec as usize)
 }
 
 /// Converts a U256 value to f64, accounting for token decimals

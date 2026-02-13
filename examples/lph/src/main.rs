@@ -61,6 +61,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         symbol,
         base_token_address,
         usdt_token_address,
+        base_delta_ratio_threshold: 0.01,
+        base_delta_threshold: 0.001,
     };
     let mut monitor = LPHStrategy::new(config, uniswap_client, binance_client);
     let telegram = TelegramBot::new(telegram_bot_key, telegram_chat_id);
