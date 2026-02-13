@@ -29,14 +29,6 @@ fn format_amount_18(value: U256) -> String {
     format!("{}.{:0>18}", integer, frac)
 }
 
-fn u256_to_f64_18(value: U256) -> f64 {
-    let divisor = U256::from(10u64).pow(U256::from(18u64));
-    let (integer, frac) = value.div_rem(divisor);
-    let frac_str = format!("{:0>18}", frac);
-    let combined = format!("{}.{}", integer, frac_str);
-    combined.parse().unwrap_or(0.0)
-}
-
 async fn fetch_bnb_mark_price(client: &Client) -> Result<f64, Box<dyn std::error::Error>> {
     let resp = client
         .get(BINANCE_PREMIUM_INDEX_URL)
@@ -98,10 +90,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let positions = manager.positions();
     println!("Owner: {} | Positions: {}", owner, positions.len());
     for (token_id, pos) in positions {
-        let w0 = u256_to_f64_18(pos.withdrawable_amount0);
-        let w1 = u256_to_f64_18(pos.withdrawable_amount1);
-        let c0 = u256_to_f64_18(pos.collectable_amount0);
-        let c1 = u256_to_f64_18(pos.collectable_amount1);
+        let w0 = utils::u256_to_f64(pos.withdrawable_amount0, 18);
+        let w1 = utils::u256_to_f64(pos.withdrawable_amount1, 18);
+        let c0 = utils::u256_to_f64(pos.collectable_amount0, 18);
+        let c1 = utils::u256_to_f64(pos.collectable_amount1, 18);
         let withdrawable_usd = w0 + w1 * bnb_mark_price;
         let collectable_usd = c0 + c1 * bnb_mark_price;
 

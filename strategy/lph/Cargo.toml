@@ -13,3 +13,4 @@ anyhow.workspace = true
 clients-binance.workspace = true
 clients-uniswapv3.workspace = true
 serde = { workspace = true }
+utils.workspace = true

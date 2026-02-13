@@ -3,7 +3,7 @@
 //! This module provides monitoring functionality for LP hedging setups that combine
 //! centralized exchange (CEX) futures accounts with on-chain AMM positions.
 
-use alloy::primitives::{Address, U256};
+use alloy::primitives::Address;
 use anyhow::{anyhow, Result};
 
 use clients_binance::BinancePerpsClient;
@@ -156,10 +156,12 @@ impl LPHStrategy {
 
         // Convert U256 amounts to f64 using 18 decimals for both tokens (spec 0101: Uniswap tokens use 18 decimals)
         const UNISWAP_TOKEN_DECIMALS: u32 = 18;
-        let amm_base_amount = u256_to_f64(amm_base_amount_raw, UNISWAP_TOKEN_DECIMALS);
-        let amm_usdt_amount = u256_to_f64(amm_usdt_amount_raw, UNISWAP_TOKEN_DECIMALS);
-        let amm_collectable_base = u256_to_f64(amm_collectable_base_raw, UNISWAP_TOKEN_DECIMALS);
-        let amm_collectable_usdt = u256_to_f64(amm_collectable_usdt_raw, UNISWAP_TOKEN_DECIMALS);
+        let amm_base_amount = utils::u256_to_f64(amm_base_amount_raw, UNISWAP_TOKEN_DECIMALS);
+        let amm_usdt_amount = utils::u256_to_f64(amm_usdt_amount_raw, UNISWAP_TOKEN_DECIMALS);
+        let amm_collectable_base =
+            utils::u256_to_f64(amm_collectable_base_raw, UNISWAP_TOKEN_DECIMALS);
+        let amm_collectable_usdt =
+            utils::u256_to_f64(amm_collectable_usdt_raw, UNISWAP_TOKEN_DECIMALS);
 
         // Get current block number
         let block_number = self.uniswap_client.get_block_number().await?;
@@ -253,20 +255,4 @@ fn format_quantity(quantity: f64, step: f64) -> String {
         (1.0_f64 / step).log10().ceil().max(0.0) as u32
     };
     format!("{:.prec$}", quantity, prec = prec as usize)
-}
-
-/// Converts a U256 value to f64, accounting for token decimals
-fn u256_to_f64(value: U256, decimals: u32) -> f64 {
-    // Convert U256 to u128 (assuming it fits)
-    // For values larger than u128::MAX, this will truncate, but that's acceptable for f64 precision
-    let value_u128 = value.to::<u128>();
-
-    // Divide by 10^decimals to get the decimal representation
-    let divisor = 10_u128.pow(decimals);
-    let whole_part = value_u128 / divisor;
-    let fractional_part = value_u128 % divisor;
-
-    // Combine whole and fractional parts
-    // Use f64 arithmetic to preserve precision
-    whole_part as f64 + (fractional_part as f64 / divisor as f64)
 }

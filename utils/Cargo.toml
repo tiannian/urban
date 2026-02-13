@@ -1,0 +1,10 @@
+[package]
+name = "utils"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+alloy.workspace = true
