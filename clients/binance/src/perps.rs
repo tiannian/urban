@@ -4,7 +4,8 @@ use anyhow::Result;
 
 use crate::config::BinancePerpsClientConfig;
 use crate::types::{
-    OrderResponse, OrderType, Orderbook, PlaceOrderRequest, Position, Side, TimeInForce,
+    OrderResponse, OrderType, Orderbook, PlaceOrderRequest, Position, PositionSide, Side,
+    TimeInForce,
 };
 use crate::utils;
 
@@ -84,6 +85,7 @@ impl BinancePerpsClient {
         let mut params: Vec<(&str, String)> = vec![
             ("symbol", symbol.to_string()),
             ("side", req.side.as_api_str().to_string()),
+            ("positionSide", req.position_side.as_api_str().to_string()),
             ("type", req.order_type.as_api_str().to_string()),
             ("quantity", req.quantity.clone()),
             ("reduceOnly", req.reduce_only.to_string()),
@@ -134,6 +136,7 @@ impl BinancePerpsClient {
         );
         let req = PlaceOrderRequest {
             side: Side::Sell,
+            position_side: PositionSide::Short,
             order_type: OrderType::Limit,
             quantity: amount.to_string(),
             price: Some(price),
@@ -166,6 +169,7 @@ impl BinancePerpsClient {
         );
         let req = PlaceOrderRequest {
             side: Side::Buy,
+            position_side: PositionSide::Short,
             order_type: OrderType::Limit,
             quantity: amount.to_string(),
             price: Some(price),

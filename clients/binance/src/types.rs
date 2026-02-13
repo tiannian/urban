@@ -72,6 +72,7 @@ impl TimeInForce {
 #[derive(Debug, Clone)]
 pub struct PlaceOrderRequest {
     pub side: Side,
+    pub position_side: PositionSide,
     pub order_type: OrderType,
     pub quantity: String,
     pub price: Option<String>,
