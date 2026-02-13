@@ -76,7 +76,7 @@ pub struct PlaceOrderRequest {
     pub order_type: OrderType,
     pub quantity: String,
     pub price: Option<String>,
-    pub reduce_only: bool,
+    pub reduce_only: Option<bool>,
     pub time_in_force: TimeInForce,
 }
 
@@ -110,7 +110,7 @@ pub struct OrderResponse {
     #[serde(rename = "stopPrice")]
     pub stop_price: String,
     #[serde(rename = "reduceOnly")]
-    pub reduce_only: bool,
+    pub reduce_only: Option<bool>,
     #[serde(rename = "closePosition")]
     pub close_position: bool,
     #[serde(rename = "timeInForce")]

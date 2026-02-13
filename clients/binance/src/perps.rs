@@ -88,10 +88,12 @@ impl BinancePerpsClient {
             ("positionSide", req.position_side.as_api_str().to_string()),
             ("type", req.order_type.as_api_str().to_string()),
             ("quantity", req.quantity.clone()),
-            ("reduceOnly", req.reduce_only.to_string()),
             ("timeInForce", req.time_in_force.as_api_str().to_string()),
             ("timestamp", utils::binance_fapi_timestamp_ms()),
         ];
+        if let Some(v) = req.reduce_only {
+            params.push(("reduceOnly", v.to_string()));
+        }
         if req.order_type == OrderType::Limit {
             if let Some(ref price) = req.price {
                 params.push(("price", price.clone()));
@@ -140,7 +142,7 @@ impl BinancePerpsClient {
             order_type: OrderType::Limit,
             quantity: amount.to_string(),
             price: Some(price),
-            reduce_only: false,
+            reduce_only: None,
             time_in_force: TimeInForce::Gtc,
         };
         let resp = self.place_order(symbol, &req).await?;
@@ -173,7 +175,7 @@ impl BinancePerpsClient {
             order_type: OrderType::Limit,
             quantity: amount.to_string(),
             price: Some(price),
-            reduce_only: true,
+            reduce_only: None,
             time_in_force: TimeInForce::Gtc,
         };
         let resp = self.place_order(symbol, &req).await?;
