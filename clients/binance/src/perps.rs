@@ -3,7 +3,9 @@ use std::sync::Arc;
 use anyhow::Result;
 
 use crate::config::BinancePerpsClientConfig;
-use crate::types::{OrderResponse, OrderType, Orderbook, PlaceOrderRequest, Position, Side};
+use crate::types::{
+    OrderResponse, OrderType, Orderbook, PlaceOrderRequest, Position, Side, TimeInForce,
+};
 use crate::utils;
 
 /// Client for Binance perpetual futures (USDT-M) API.
@@ -85,6 +87,7 @@ impl BinancePerpsClient {
             ("type", req.order_type.as_api_str().to_string()),
             ("quantity", req.quantity.clone()),
             ("reduceOnly", req.reduce_only.to_string()),
+            ("timeInForce", req.time_in_force.as_api_str().to_string()),
             ("timestamp", utils::binance_fapi_timestamp_ms()),
         ];
         if req.order_type == OrderType::Limit {
@@ -94,7 +97,7 @@ impl BinancePerpsClient {
         }
         let signed_query = utils::sign_params(&self.api_secret, &params);
         let url = format!("{}/fapi/v1/order", self.base_url);
-        let order_response = self
+        let resp = self
             .client
             .post(&url)
             .header("X-MBX-APIKEY", &self.api_key)
@@ -104,53 +107,76 @@ impl BinancePerpsClient {
             )
             .body(signed_query)
             .send()
-            .await?
-            .json::<OrderResponse>()
             .await?;
+        let status = resp.status();
+        let body = resp.text().await?;
+        println!("place_order: http status={} body={}", status, body);
+        let order_response: OrderResponse = serde_json::from_str(&body)
+            .map_err(|e| anyhow::anyhow!("parse order response: {} body={}", e, body))?;
         Ok(order_response)
     }
 
     /// Places a limit sell at best ask (asks0) to open a short position.
     pub async fn open_sell(&self, symbol: &str, amount: &str) -> Result<OrderResponse> {
-        tracing::info!(symbol, amount, "open_sell: fetching orderbook");
+        println!(
+            "open_sell: symbol={} amount={} fetching orderbook",
+            symbol, amount
+        );
         let orderbook = self.get_orderbook(symbol, Some(5)).await?;
         let ask = orderbook
             .asks
             .first()
             .ok_or_else(|| anyhow::anyhow!("orderbook asks empty"))?;
         let price = ask[0].clone();
-        tracing::info!(symbol, amount, price = %price, "open_sell: placing limit sell at best ask");
+        println!(
+            "open_sell: symbol={} amount={} price={} placing limit sell at best ask",
+            symbol, amount, price
+        );
         let req = PlaceOrderRequest {
             side: Side::Sell,
             order_type: OrderType::Limit,
             quantity: amount.to_string(),
             price: Some(price),
             reduce_only: false,
+            time_in_force: TimeInForce::Gtc,
         };
         let resp = self.place_order(symbol, &req).await?;
-        tracing::info!(symbol, order_id = resp.order_id, "open_sell: order placed");
+        println!(
+            "open_sell: symbol={} order_id={} order placed",
+            symbol, resp.order_id
+        );
         Ok(resp)
     }
 
     /// Places a limit buy at best bid (bids0), reduce-only, to close a short position.
     pub async fn close_sell(&self, symbol: &str, amount: &str) -> Result<OrderResponse> {
-        tracing::info!(symbol, amount, "close_sell: fetching orderbook");
+        println!(
+            "close_sell: symbol={} amount={} fetching orderbook",
+            symbol, amount
+        );
         let orderbook = self.get_orderbook(symbol, Some(5)).await?;
         let bid = orderbook
             .bids
             .first()
             .ok_or_else(|| anyhow::anyhow!("orderbook bids empty"))?;
         let price = bid[0].clone();
-        tracing::info!(symbol, amount, price = %price, "close_sell: placing limit buy at best bid (reduce-only)");
+        println!(
+            "close_sell: symbol={} amount={} price={} placing limit buy at best bid (reduce-only)",
+            symbol, amount, price
+        );
         let req = PlaceOrderRequest {
             side: Side::Buy,
             order_type: OrderType::Limit,
             quantity: amount.to_string(),
             price: Some(price),
             reduce_only: true,
+            time_in_force: TimeInForce::Gtc,
         };
         let resp = self.place_order(symbol, &req).await?;
-        tracing::info!(symbol, order_id = resp.order_id, "close_sell: order placed");
+        println!(
+            "close_sell: symbol={} order_id={} order placed",
+            symbol, resp.order_id
+        );
         Ok(resp)
     }
 }

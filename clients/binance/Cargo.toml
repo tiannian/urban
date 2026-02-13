@@ -9,7 +9,6 @@ path = "src/lib.rs"
 
 [dependencies]
 anyhow.workspace = true
-tracing = "0.1"
 hex = "0.4"
 hmac = "0.12"
 reqwest = { workspace = true }

@@ -7,5 +7,6 @@ pub use config::BinancePerpsClientConfig;
 pub use perps::BinancePerpsClient;
 pub use types::{
     OrderResponse, OrderType, Orderbook, PlaceOrderRequest, Position, PositionSide, Side,
+    TimeInForce,
 };
 pub use utils::fapi_signed_request;

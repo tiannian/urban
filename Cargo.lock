@@ -1117,6 +1117,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "close-sell"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clients-binance",
+ "reqwest",
+ "tokio",
+]
+
+[[package]]
 name = "const-hex"
 version = "1.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -53,6 +53,21 @@ impl OrderType {
     }
 }
 
+/// Time in force. Serializes to API string `GTC`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "UPPERCASE")]
+pub enum TimeInForce {
+    Gtc,
+}
+
+impl TimeInForce {
+    pub fn as_api_str(self) -> &'static str {
+        match self {
+            TimeInForce::Gtc => "GTC",
+        }
+    }
+}
+
 /// Request parameters for placing a single order (POST `/fapi/v1/order`).
 #[derive(Debug, Clone)]
 pub struct PlaceOrderRequest {
@@ -61,6 +76,7 @@ pub struct PlaceOrderRequest {
     pub quantity: String,
     pub price: Option<String>,
     pub reduce_only: bool,
+    pub time_in_force: TimeInForce,
 }
 
 /// Response from Binance POST `/fapi/v1/order` (New Order).
