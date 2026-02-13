@@ -10,7 +10,7 @@ use alloy::providers::{Provider, RootProvider};
 use clients_binance::BinancePerpsClient;
 use clients_telegrambot::TelegramBot;
 use clients_uniswapv3::UniswapV3PositionManager;
-use lph::{LPHMonitorConfig, LPHStrategy};
+use lph::{LPHStrategy, LPHStrategyConfig};
 use std::str::FromStr;
 use std::sync::Arc;
 use tokio::time::Duration;
@@ -56,7 +56,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     let uniswap_client = UniswapV3PositionManager::new(uniswap_config, provider);
 
-    let config = LPHMonitorConfig {
+    let config = LPHStrategyConfig {
         owner,
         symbol,
         base_token_address,

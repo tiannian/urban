@@ -2,8 +2,8 @@
 
 use alloy::primitives::Address;
 
-/// Configuration for LPHMonitor (parameters only; clients are passed to `LPHMonitor::new`).
-pub struct LPHMonitorConfig {
+/// Configuration for LPHStrategy (parameters only; clients are passed to `LPHStrategy::new`).
+pub struct LPHStrategyConfig {
     /// Ethereum address that owns the Uniswap V3 LP positions
     pub owner: Address,
     /// Binance futures symbol (e.g., "BTCUSDT")

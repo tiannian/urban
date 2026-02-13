@@ -7,6 +7,6 @@ pub mod config;
 mod lph;
 mod types;
 
-pub use config::LPHMonitorConfig;
+pub use config::LPHStrategyConfig;
 pub use lph::LPHStrategy;
 pub use types::MonitoringSnapshot;

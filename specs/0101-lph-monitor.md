@@ -65,28 +65,28 @@ The `LPHStrategy` type contains:
 - `base_token_address`: The Ethereum address of the BASE token (e.g., BNB, ETH).
 - `usdt_token_address`: The Ethereum address of the USDT token.
 
-**LPHMonitorConfig Structure**
+**LPHStrategyConfig Structure**
 
-The `LPHMonitorConfig` structure contains:
+The `LPHStrategyConfig` structure contains:
 
-- `uniswap_client`: An instance of `UniswapV3PositionManager` (as defined in `0103-uniswapv3-client.md`) used to read LP position data from Uniswap V3.
-- `binance_client`: An instance of `BinancePerpsClient` (as defined in `0104-binance-client.md`) used to read futures position data from Binance.
 - `owner`: The Ethereum address that owns the Uniswap V3 LP positions.
 - `symbol`: The Binance futures symbol (e.g., `BTCUSDT`).
 - `base_token_address`: The Ethereum address of the BASE token (e.g., BNB, ETH).
 - `usdt_token_address`: The Ethereum address of the USDT token.
 
-The `LPHMonitorConfig` structure must derive `serde::Serialize` and `serde::Deserialize` for serialization support.
+The `LPHStrategyConfig` structure must derive `serde::Serialize` and `serde::Deserialize` for serialization support.
 
 **Constructor**
 
 ```rust
-fn new(config: LPHMonitorConfig) -> Self
+fn new(config: LPHStrategyConfig, uniswap_client: UniswapV3PositionManager, binance_client: BinancePerpsClient) -> Self
 ```
 
 - Creates a new `LPHStrategy` instance.
 - **Parameters:**
-  - `config`: A `LPHMonitorConfig` instance containing all configuration parameters and client instances.
+  - `config`: A `LPHStrategyConfig` instance containing all configuration parameters.
+  - `uniswap_client`: An instance of `UniswapV3PositionManager` (as defined in `0103-uniswapv3-client.md`) used to read LP position data from Uniswap V3.
+  - `binance_client`: An instance of `BinancePerpsClient` (as defined in `0104-binance-client.md`) used to read futures position data from Binance.
 - **Returns:** A new `LPHStrategy` instance with both clients and configuration parameters configured.
 
 ### status Function

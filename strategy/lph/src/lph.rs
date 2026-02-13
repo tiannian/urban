@@ -9,7 +9,7 @@ use anyhow::{anyhow, Result};
 use clients_binance::BinancePerpsClient;
 use clients_uniswapv3::UniswapV3PositionManager;
 
-use crate::config::LPHMonitorConfig;
+use crate::config::LPHStrategyConfig;
 use crate::types::MonitoringSnapshot;
 
 /// LP Hedging Monitor
@@ -36,14 +36,14 @@ impl LPHStrategy {
     /// Creates a new `LPHStrategy` instance
     ///
     /// # Arguments
-    /// * `config` - A `LPHMonitorConfig` instance containing configuration parameters
+    /// * `config` - A `LPHStrategyConfig` instance containing configuration parameters
     /// * `uniswap_client` - Uniswap V3 client instance
     /// * `binance_client` - Binance futures client instance
     ///
     /// # Returns
     /// A new `LPHStrategy` instance with both clients and configuration parameters configured
     pub fn new(
-        config: LPHMonitorConfig,
+        config: LPHStrategyConfig,
         uniswap_client: UniswapV3PositionManager,
         binance_client: BinancePerpsClient,
     ) -> Self {
